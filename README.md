@@ -1,162 +1,208 @@
-# PyTorch Tensor Playground
+# Torch Tensor Operations Visual Tracker
 
-A full-stack web application for visualizing PyTorch tensor operations and their computation graphs in real-time.
+An interactive full-stack web application for exploring PyTorch tensor operations step-by-step — with live shape tracking, computation graph visualization, per-operation stats, and inline PyTorch documentation links.
 
-## Overview
+---
 
-**PyTorch Tensor Playground** is an interactive tool that allows you to:
-- Create tensors with various initialization methods
-- Apply tensor operations step by step
-- Visualize the computation graph showing tensor shapes through the pipeline
-- Track operation history with timestamps
+## Features
+
+- **21 tensor operations** across four categories: elementwise, reduction, shape & indexing, and joining
+- **Computation graph** — DAG rendered with Graphviz, showing tensor shapes at every step
+- **Live statistics** — mean, std, min, max, sum, norm, numel, rank updated after each op
+- **Operation history** — timestamped log of every applied operation
+- **PyTorch docs pill** — one-click link to the official PyTorch API page for the selected op
+- **Shape presets** — quick-select buttons in the tensor creator for common demo shapes
+
+---
 
 ## Project Structure
 
 ```
-pytorch-viz/
-├── frontend/          # Vue 3 + Vite web application
-│   ├── src/
-│   │   ├── components/     # Vue components for UI
-│   │   ├── stores/         # Pinia state management
-│   │   ├── assets/         # CSS and static files
-│   │   └── main.js         # Entry point
+.
+├── frontend/                     # React + Vite + Tailwind UI
 │   ├── api/
-│   │   └── client.js       # Axios HTTP client for backend
+│   │   └── client.js             # Axios HTTP client
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── TensorCreator.jsx     # Create tensors with shape presets
+│   │   │   ├── OperationPanel.jsx    # Select & configure ops, docs link
+│   │   │   ├── TensorDisplay.jsx     # Grid view of current tensor values
+│   │   │   ├── GraphDisplay.jsx      # Computation graph (base64 PNG)
+│   │   │   ├── StatsPanel.jsx        # Summary statistics
+│   │   │   └── HistoryList.jsx       # Timestamped op log
+│   │   ├── stores/
+│   │   │   └── tensorStore.js        # Zustand global state
+│   │   └── main.jsx
 │   ├── package.json
 │   └── vite.config.js
-└── backend/           # FastAPI Python backend
+└── backend/                      # FastAPI + PyTorch backend
     ├── app/
-    │   ├── main.py         # FastAPI application and routes
-    │   ├── models.py       # Pydantic request/response models
-    │   ├── operations.py   # PyTorch tensor operations
-    │   └── graph.py        # Computation graph visualization
+    │   ├── main.py               # Routes
+    │   ├── models.py             # Pydantic request / response models
+    │   ├── operations.py         # PyTorch operation implementations
+    │   └── graph.py              # Graphviz DAG builder
     └── pyproject.toml
 ```
 
-## Features
+---
 
-### Frontend (`frontend/`)
-- **Vue 3** with `<script setup>` syntax
-- **Pinia** for state management with `useTensorStore`
-- **Axios** for API communication
-- **Vite** for fast development and optimized builds
+## Tech Stack
 
-**Components:**
-- `TensorCreator.vue` - Create tensors (ones/zeros with custom shapes)
-- `OperationPanel.vue` - Apply operations with dynamic parameters
-- `TensorDisplay.vue` - View current tensor values in grid format
-- `GraphDisplay.vue` - Visualize computation graph as PNG image
-- `HistoryList.vue` - Track operation history with timestamps
+| Layer | Technology |
+|---|---|
+| UI framework | React 18 + Vite |
+| State management | Zustand |
+| Styling | Tailwind CSS + shadcn/ui |
+| HTTP client | Axios |
+| API server | FastAPI |
+| Tensor ops | PyTorch |
+| Graph rendering | Graphviz (Python) |
+| Data validation | Pydantic v2 |
 
-### Backend (`backend/`)
-- **FastAPI** REST API server
-- **PyTorch** for tensor operations
-- **Graphviz** for computation graph generation
-- **CORS** enabled for frontend access
+---
 
-**Supported Operations:**
-- `create` - Initialize tensor (ones/zeros)
-- `add` - Element-wise addition
-- `matmul` - Matrix multiplication
-- `sum` - Reduce with optional dimension
-- `reshape` - Change tensor shape
-- `transpose` - Swap dimensions
-- `cumulative-graph` - Generate visual graph of all operations
+## Supported Operations
+
+### Elementwise / Scalar
+
+| Op | Endpoint | Notes |
+|---|---|---|
+| Add | `POST /add` | Element-wise, broadcasts |
+| Subtract | `POST /sub` | Element-wise |
+| Multiply | `POST /mul` | Element-wise |
+| Divide | `POST /div` | Element-wise |
+| Matrix Multiply | `POST /matmul` | `torch.matmul` — supports batched |
+| Absolute Value | `POST /abs` | |
+| Negate | `POST /neg` | |
+| Clamp | `POST /clamp` | Optional `min_val`, `max_val` |
+
+### Reduction
+
+| Op | Endpoint | Notes |
+|---|---|---|
+| Sum | `POST /sum` | Optional `dim`, `keepdim` |
+
+### Shape & Indexing
+
+| Op | Endpoint | Notes |
+|---|---|---|
+| Reshape | `POST /reshape` | `shape: [int, ...]` |
+| Transpose | `POST /transpose` | `dim0`, `dim1` |
+| Flatten | `POST /flatten` | `start_dim`, `end_dim` |
+| Squeeze | `POST /squeeze` | Optional `dim`; squeezes all size-1 dims if omitted |
+| Unsqueeze | `POST /unsqueeze` | `dim` |
+| Permute | `POST /permute` | `dims: [int, ...]` |
+| Tile | `POST /tile` | `dims: [int, ...]` repeat counts per axis |
+| Repeat | `POST /repeat` | `sizes: [int, ...]` copies per axis |
+| Narrow | `POST /narrow` | `dim`, `start`, `length` |
+| Chunk | `POST /chunk` | `chunks`, `dim`; returns `TensorsResponse` (may be < `chunks` pieces) |
+
+### Joining
+
+| Op | Endpoint | Notes |
+|---|---|---|
+| Cat | `POST /cat` | Concatenate along existing dim; `tensors[0]` is current tensor |
+| Stack | `POST /stack` | Stack along new dim; all tensors must share shape |
+
+### Utilities
+
+| Op | Endpoint | Notes |
+|---|---|---|
+| Stats | `POST /stats` | Read-only; returns mean, std, min, max, sum, norm, numel, rank |
+| Create | `POST /create` | `op: "ones" \| "zeros"`, `shape` |
+| Cumulative graph | `POST /cumulative-graph` | Returns base64 PNG of full op DAG |
+
+---
 
 ## Installation
 
-### Backend Setup
+### Backend
 
 ```bash
 cd backend
 pip install -e .
 ```
 
-### Frontend Setup
+Requires Python ≥ 3.10 and the `graphviz` system binary:
+
+```bash
+# macOS
+brew install graphviz
+
+# Ubuntu / Debian
+sudo apt install graphviz
+```
+
+### Frontend
 
 ```bash
 cd frontend
 npm install
 ```
 
-## Running the Application
+---
 
-### Start Backend Server
+## Running
 
 ```bash
+# Terminal 1 — backend
 cd backend
 uvicorn app.main:app --reload
-```
+# API available at http://localhost:8000
+# Interactive docs at http://localhost:8000/docs
 
-The API will be available at `http://localhost:8000`
-
-### Start Frontend Development Server
-
-```bash
+# Terminal 2 — frontend
 cd frontend
 npm run dev
+# UI available at http://localhost:5173
 ```
 
-The application will be available at `http://localhost:5173`
+---
 
 ## Usage
 
-1. **Create a Tensor**: Select initialization method (ones/zeros) and specify shape
-2. **Apply Operations**: Choose an operation and provide required parameters
-3. **View Results**: The current tensor is displayed in the right panel
-4. **Inspect Graph**: After applying operations, see the computation graph
-5. **Check History**: All operations are logged with timestamps
+1. **Create a tensor** — pick `ones` or `zeros`, type a shape or click a preset (`2×2`, `3×3`, `4×3`, `2×1×2`, `1×3×3`)
+2. **Select an operation** — grouped dropdown; a **PyTorch docs** pill appears next to the label linking to the official API page
+3. **Configure parameters** — contextual inputs appear for the chosen op (dim, shape, extra tensors, etc.)
+4. **Apply** — the result tensor, stats, and computation graph all update instantly
+5. **Chunk** — after a chunk op, an info box shows all chunk shapes; `currentTensor` follows `chunk[0]`
+6. **Cat / Stack** — extra tensors textarea is pre-seeded with a same-shape tensor; current tensor is always `tensors[0]`
 
-## API Endpoints
+---
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/create` | Create initial tensor |
-| POST | `/add` | Add two tensors |
-| POST | `/matmul` | Matrix multiply |
-| POST | `/sum` | Sum tensor elements |
-| POST | `/reshape` | Reshape tensor |
-| POST | `/transpose` | Transpose dimensions |
-| POST | `/cumulative-graph` | Generate computation graph |
+## API Response Models
+
+```json
+// TensorResponse (single tensor)
+{ "data": [[1,2],[3,4]], "shape": [2,2], "dtype": "float32", "operation": "add" }
+
+// TensorsResponse (chunk)
+{ "tensors": [ { "data": ..., "shape": ..., "dtype": ..., "operation": "chunk" }, ... ], "operation": "chunk" }
+
+// StatsResponse
+{ "mean": 1.0, "std": 0.0, "min": 1.0, "max": 1.0, "sum": 9.0, "norm": 3.0, "numel": 9, "rank": 2 }
+
+// GraphResponse
+{ "image": "data:image/png;base64,..." }
+```
+
+---
 
 ## Configuration
 
-### Backend
-- Default port: `8000`
-- CORS origins: `*` (configure for production)
-- PyTorch dtype: `float32` (default, customizable per request)
+| Setting | Default | Location |
+|---|---|---|
+| Backend port | `8000` | `uvicorn` CLI |
+| CORS origins | `*` | `backend/app/main.py` |
+| Default dtype | `float32` | Per-request param |
+| API base URL | `http://localhost:8000` | `frontend/api/client.js` |
 
-### Frontend
-- API base URL: `http://localhost:8000` (configured in `frontend/api/client.js`)
-- Build output: `dist/`
+---
 
-## Technologies Used
-
-### Frontend
-- Vue 3
-- Pinia
-- Axios
-- Vite
-
-### Backend
-- FastAPI
-- PyTorch
-- Graphviz
-- Pydantic
-
-## Development
-
-### Build Frontend for Production
+## Production Build
 
 ```bash
 cd frontend
-npm run build
+npm run build    # outputs to frontend/dist/
+npm run preview  # local preview of production build
 ```
-
-### Preview Production Build
-
-```bash
-cd frontend
-npm run preview
-```
-
