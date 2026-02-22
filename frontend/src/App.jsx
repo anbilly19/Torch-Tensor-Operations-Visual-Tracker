@@ -11,7 +11,8 @@ import { FlaskConical } from 'lucide-react'
 
 export default function App() {
   const currentTensor = useTensorStore((s) => s.currentTensor)
-  const graphImage    = useTensorStore((s) => s.graphImage)
+  const graphNodes    = useTensorStore((s) => s.graphNodes)
+  const graphEdges    = useTensorStore((s) => s.graphEdges)
 
   return (
     <div className="min-h-screen bg-zinc-50">
@@ -41,10 +42,10 @@ export default function App() {
           <Separator orientation="vertical" className="self-stretch" />
 
           {/* Right panel */}
-          <div className="flex-1 flex flex-col gap-4">
+          <div className="flex-1 flex flex-col gap-4 min-w-0">
             <TensorDisplay tensor={currentTensor} title="Current Tensor" />
             <TensorStats />
-            <GraphDisplay image={graphImage} />
+            <GraphDisplay graphNodes={graphNodes} graphEdges={graphEdges} />
           </div>
         </div>
       </main>

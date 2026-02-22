@@ -5,10 +5,11 @@ export const useTensorStore = create((set, get) => ({
   originalTensor: null,
   currentTensor:  null,
   operations:     [],
-  graphImage:     null,
+  graphNodes:     null,   // GraphNode[] | null
+  graphEdges:     null,   // GraphEdge[] | null
   history:        [],
-  stats:          null,   // StatsResponse | null
-  chunkTensors:   null,   // List<TensorResponse> | null — populated by /chunk
+  stats:          null,
+  chunkTensors:   null,
 
   addHistory: (description) => {
     set((state) => ({
@@ -27,7 +28,8 @@ export const useTensorStore = create((set, get) => ({
         originalTensor: tensor,
         currentTensor:  tensor,
         operations:     [],
-        graphImage:     null,
+        graphNodes:     null,
+        graphEdges:     null,
         stats:          null,
         chunkTensors:   null,
       })
@@ -49,11 +51,9 @@ export const useTensorStore = create((set, get) => ({
       const response = await api.applyOperation(opName, currentTensor, params)
       const responseData = response.data
 
-      // chunk returns TensorsResponse { tensors: [...], operation }
-      // all other ops return TensorResponse { data: [...], ... }
       const isChunk = opName === 'chunk'
       const resultTensor = isChunk
-        ? responseData.tensors[0].data   // follow first chunk as current
+        ? responseData.tensors[0].data
         : responseData.data
 
       const opRecord = { op: opName, params, tensor_b: params.tensor_b ?? null }
@@ -69,7 +69,6 @@ export const useTensorStore = create((set, get) => ({
         : ''
       get().addHistory(`Applied ${opName}${chunkLabel}`)
 
-      // Update stats and graph in parallel
       await Promise.all([get().fetchStats(), get().generateGraph()])
     } catch (error) {
       console.error('Operation failed:', error)
@@ -94,12 +93,15 @@ export const useTensorStore = create((set, get) => ({
   generateGraph: async () => {
     const { originalTensor, operations } = get()
     if (!originalTensor || operations.length === 0) {
-      set({ graphImage: null })
+      set({ graphNodes: null, graphEdges: null })
       return
     }
     try {
       const response = await api.generateCumulativeGraph(originalTensor, operations)
-      set({ graphImage: response.data.image })
+      set({
+        graphNodes: response.data.nodes,
+        graphEdges: response.data.edges,
+      })
     } catch (error) {
       console.error('Graph generation failed:', error)
     }
@@ -110,7 +112,8 @@ export const useTensorStore = create((set, get) => ({
       originalTensor: null,
       currentTensor:  null,
       operations:     [],
-      graphImage:     null,
+      graphNodes:     null,
+      graphEdges:     null,
       history:        [],
       stats:          null,
       chunkTensors:   null,

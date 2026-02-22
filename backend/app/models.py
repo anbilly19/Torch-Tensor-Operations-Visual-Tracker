@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import List, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
 
 # ── Tensor creation ───────────────────────────────────────────────────────────
@@ -161,9 +161,40 @@ class TensorsResponse(BaseModel):
     operation: str
 
 
-class GraphResponse(BaseModel):
-    image: str  # base64 PNG
+# ── Interactive graph response ─────────────────────────────────────────────────
 
+class TensorStats(BaseModel):
+    mean:  float
+    std:   float
+    min:   float
+    max:   float
+    sum:   float
+    norm:  float
+    numel: int
+    rank:  int
+
+
+class GraphNode(BaseModel):
+    id:       str
+    type:     str          # 'tensor' | 'op' | 'tensor_b'
+    label:    str
+    shape:    Optional[List[int]] = None
+    stats:    Optional[TensorStats] = None
+    docs_url: Optional[str] = None
+
+
+class GraphEdge(BaseModel):
+    id:     str
+    source: str
+    target: str
+
+
+class GraphResponse(BaseModel):
+    nodes: List[GraphNode]
+    edges: List[GraphEdge]
+
+
+# ── Cumulative graph request ───────────────────────────────────────────────────
 
 class OperationStep(BaseModel):
     op: str

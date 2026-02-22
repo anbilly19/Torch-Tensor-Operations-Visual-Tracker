@@ -6,16 +6,12 @@ from . import models, operations, graph
 app = FastAPI(title="PyTorch Tensor Operations API")
 
 # ── CORS ───────────────────────────────────────────────────────────────────
-# ALLOWED_ORIGINS env var is a comma-separated list of exact origins.
-# Falls back to '*' in local/dev when the var is not set.
-# On Railway, set ALLOWED_ORIGINS to your Vercel production URL(s).
 _raw = os.environ.get("ALLOWED_ORIGINS", "")
 _explicit = [o.strip() for o in _raw.split(",") if o.strip()]
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_explicit if _explicit else ["*"],
-    # Also allow any *.vercel.app preview deploy automatically
     allow_origin_regex=r"https://.*\.vercel\.app",
     allow_methods=["*"],
     allow_headers=["*"],
@@ -23,7 +19,6 @@ app.add_middleware(
 
 
 def _resp(tensor, operation: str) -> dict:
-    """Build a TensorResponse dict from a torch.Tensor."""
     return {
         "data": tensor.tolist(),
         "shape": list(tensor.shape),
@@ -33,7 +28,6 @@ def _resp(tensor, operation: str) -> dict:
 
 
 def _resp_many(tensors, operation: str) -> dict:
-    """Build a TensorsResponse dict from a list of torch.Tensors."""
     return {
         "tensors": [_resp(t, operation) for t in tensors],
         "operation": operation,
@@ -139,7 +133,6 @@ def sum_tensor(req: models.SumRequest):
 
 @app.post("/stats", response_model=models.StatsResponse)
 def tensor_stats(req: models.StatsRequest):
-    """Return summary statistics for the given tensor (read-only, no state change)."""
     try:
         return operations.tensor_stats(req.tensor, req.dtype)
     except Exception as e:
@@ -159,10 +152,7 @@ def reshape(req: models.ReshapeRequest):
 @app.post("/transpose", response_model=models.TensorResponse)
 def transpose(req: models.TransposeRequest):
     try:
-        return _resp(
-            operations.transpose_tensor(req.tensor, req.dim0, req.dim1, req.dtype),
-            "transpose",
-        )
+        return _resp(operations.transpose_tensor(req.tensor, req.dim0, req.dim1, req.dtype), "transpose")
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -170,10 +160,7 @@ def transpose(req: models.TransposeRequest):
 @app.post("/flatten", response_model=models.TensorResponse)
 def flatten(req: models.FlattenRequest):
     try:
-        return _resp(
-            operations.flatten_tensor(req.tensor, req.start_dim, req.end_dim, req.dtype),
-            "flatten",
-        )
+        return _resp(operations.flatten_tensor(req.tensor, req.start_dim, req.end_dim, req.dtype), "flatten")
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -221,17 +208,13 @@ def repeat(req: models.RepeatRequest):
 @app.post("/narrow", response_model=models.TensorResponse)
 def narrow(req: models.NarrowRequest):
     try:
-        return _resp(
-            operations.narrow_tensor(req.tensor, req.dim, req.start, req.length, req.dtype),
-            "narrow",
-        )
+        return _resp(operations.narrow_tensor(req.tensor, req.dim, req.start, req.length, req.dtype), "narrow")
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
 
 @app.post("/chunk", response_model=models.TensorsResponse)
 def chunk(req: models.ChunkRequest):
-    """Split into up to `chunks` pieces. Returns TensorsResponse (may be fewer than requested)."""
     try:
         ts = operations.chunk_tensor(req.tensor, req.chunks, req.dim, req.dtype)
         return _resp_many(ts, "chunk")
@@ -241,7 +224,6 @@ def chunk(req: models.ChunkRequest):
 
 @app.post("/cat", response_model=models.TensorResponse)
 def cat(req: models.CatRequest):
-    """Concatenate along an existing dim. `tensors[0]` is the primary tensor."""
     try:
         return _resp(operations.cat_tensors(req.tensors, req.dim, req.dtype), "cat")
     except Exception as e:
@@ -250,22 +232,21 @@ def cat(req: models.CatRequest):
 
 @app.post("/stack", response_model=models.TensorResponse)
 def stack(req: models.StackRequest):
-    """Stack along a NEW dim. `tensors[0]` is the primary tensor."""
     try:
         return _resp(operations.stack_tensors(req.tensors, req.dim, req.dtype), "stack")
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
 
-# ── Graph ─────────────────────────────────────────────────────────────────────
+# ── Interactive graph ───────────────────────────────────────────────────────────
 
 @app.post("/cumulative-graph", response_model=models.GraphResponse)
 def cumulative_graph(req: models.CumulativeGraphRequest):
     try:
-        image = graph.generate_shape_graph(
+        data = graph.generate_graph_data(
             req.original_tensor,
             [step.dict() for step in req.operations],
         )
-        return {"image": image}
+        return data
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
