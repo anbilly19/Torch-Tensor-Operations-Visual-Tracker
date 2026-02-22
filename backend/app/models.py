@@ -1,54 +1,77 @@
 from pydantic import BaseModel, Field
-from typing import List, Union, Optional
+from typing import List, Optional
 
-# For tensor data we accept nested lists
-TensorData = List
+# ── Tensor creation ───────────────────────────────────────────────────────────
 
 class CreateRequest(BaseModel):
     op: str = Field(..., description="'ones' or 'zeros'")
     shape: List[int] = Field(..., description="Tensor dimensions, e.g. [2,3]")
-    dtype: Optional[str] = "float32"  # optional, default float32
+    dtype: Optional[str] = "float32"
+
+
+# ── Binary op requests ────────────────────────────────────────────────────────
 
 class BinaryOpRequest(BaseModel):
-    tensor_a: List  # nested list
+    """Used for add, sub, mul, div."""
+    tensor_a: List
     tensor_b: List
     dtype: Optional[str] = "float32"
+
 
 class MatMulRequest(BaseModel):
     tensor_a: List
     tensor_b: List
     dtype: Optional[str] = "float32"
 
+
+# ── Unary op requests ─────────────────────────────────────────────────────────
+
+class UnaryOpRequest(BaseModel):
+    """Used for abs, neg."""
+    tensor: List
+    dtype: Optional[str] = "float32"
+
+
+class ClampRequest(BaseModel):
+    tensor: List
+    min_val: Optional[float] = None
+    max_val: Optional[float] = None
+    dtype: Optional[str] = "float32"
+
+
+# ── Reduction / shape requests ────────────────────────────────────────────────
+
 class SumRequest(BaseModel):
     tensor: List
-    dim: Optional[int] = None  # if None, sum all elements
+    dim: Optional[int] = None
     keepdim: bool = False
     dtype: Optional[str] = "float32"
+
 
 class ReshapeRequest(BaseModel):
     tensor: List
     shape: List[int]
     dtype: Optional[str] = "float32"
 
-# Response model
+
+# ── Response models ───────────────────────────────────────────────────────────
+
 class TensorResponse(BaseModel):
-    data: List  # result as nested list
+    data: List
     shape: List[int]
     dtype: str
     operation: str
 
-class GraphRequest(BaseModel):
-    operation: str
-    tensors: List[List]  # list of tensor data (nested lists)
-    params: Optional[dict] = {}  # optional parameters (e.g., shape for reshape)
 
 class GraphResponse(BaseModel):
     image: str  # base64 PNG
 
+
 class OperationStep(BaseModel):
-    op: str                 # operation name, e.g., "add", "matmul"
-    params: dict = {}       # parameters like dim, shape, etc.
-    tensor_b: Optional[List] = None  # for binary ops, second tensor
+    op: str
+    params: dict = {}
+    tensor_b: Optional[List] = None
+
 
 class CumulativeGraphRequest(BaseModel):
     original_tensor: List
