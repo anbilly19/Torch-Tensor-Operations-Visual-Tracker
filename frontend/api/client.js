@@ -8,39 +8,27 @@ const apiClient = axios.create({
 });
 
 // ── Endpoint map ──────────────────────────────────────────────────────────────
-// Maps every op name used in OperationPanel to its FastAPI route.
 const ENDPOINTS = {
-  // Binary
   add:       '/add',
   sub:       '/sub',
   mul:       '/mul',
   div:       '/div',
   matmul:    '/matmul',
-  // Unary
   abs:       '/abs',
   neg:       '/neg',
   clamp:     '/clamp',
-  // Reduction
   sum:       '/sum',
-  // Shape
   reshape:   '/reshape',
   transpose: '/transpose',
 };
 
-// Ops whose request body uses { tensor_a, tensor_b }
 const BINARY_OPS = new Set(['add', 'sub', 'mul', 'div', 'matmul']);
-
-// Ops whose request body uses { tensor } with no extra params
 const UNARY_OPS  = new Set(['abs', 'neg']);
 
 // ── Request body builder ───────────────────────────────────────────────────
 function buildBody(opName, tensor, params) {
-  if (BINARY_OPS.has(opName)) {
-    return { tensor_a: tensor, tensor_b: params.tensor_b };
-  }
-  if (UNARY_OPS.has(opName)) {
-    return { tensor };
-  }
+  if (BINARY_OPS.has(opName)) return { tensor_a: tensor, tensor_b: params.tensor_b };
+  if (UNARY_OPS.has(opName))  return { tensor };
   if (opName === 'clamp') {
     return {
       tensor,
@@ -48,15 +36,9 @@ function buildBody(opName, tensor, params) {
       ...(params.max_val !== undefined && { max_val: params.max_val }),
     };
   }
-  if (opName === 'sum') {
-    return { tensor, dim: params.dim ?? null, keepdim: params.keepdim ?? false };
-  }
-  if (opName === 'reshape') {
-    return { tensor, shape: params.shape };
-  }
-  if (opName === 'transpose') {
-    return { tensor, dim0: params.dim0 ?? 0, dim1: params.dim1 ?? 1 };
-  }
+  if (opName === 'sum')       return { tensor, dim: params.dim ?? null, keepdim: params.keepdim ?? false };
+  if (opName === 'reshape')   return { tensor, shape: params.shape };
+  if (opName === 'transpose') return { tensor, dim0: params.dim0 ?? 0, dim1: params.dim1 ?? 1 };
   throw new Error(`Unsupported operation: ${opName}`);
 }
 
@@ -70,6 +52,10 @@ export default {
     const url = ENDPOINTS[opName];
     if (!url) throw new Error(`Unknown operation: ${opName}`);
     return apiClient.post(url, buildBody(opName, tensor, params));
+  },
+
+  fetchStats(tensor) {
+    return apiClient.post('/stats', { tensor });
   },
 
   generateCumulativeGraph(originalTensor, operations) {

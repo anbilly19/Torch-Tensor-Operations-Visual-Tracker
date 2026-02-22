@@ -119,6 +119,15 @@ def sum_tensor(req: models.SumRequest):
         raise HTTPException(status_code=400, detail=str(e))
 
 
+@app.post("/stats", response_model=models.StatsResponse)
+def tensor_stats(req: models.StatsRequest):
+    """Return summary statistics for the given tensor (read-only, no state change)."""
+    try:
+        return operations.tensor_stats(req.tensor, req.dtype)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
 # ── Shape ops ─────────────────────────────────────────────────────────────────
 
 @app.post("/reshape", response_model=models.TensorResponse)

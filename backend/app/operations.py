@@ -67,13 +67,33 @@ def clamp_tensor(
     return torch.clamp(tensor, min=min_val, max=max_val)
 
 
-# ── Reduction ops ──────────────────────────────────────────────────────────────
+# ── Reduction ops ─────────────────────────────────────────────────────────────
 
 def sum_tensor(t: List, dim: Optional[int] = None, keepdim: bool = False, dtype: str = "float32"):
     tensor = torch.tensor(t, dtype=getattr(torch, dtype))
     if dim is None:
         return tensor.sum()
     return tensor.sum(dim=dim, keepdim=keepdim)
+
+
+def tensor_stats(t: List, dtype: str = "float32") -> dict:
+    """Compute summary statistics over all elements of the tensor.
+
+    Returns a flat dict of scalar floats:
+        mean, std, min, max, sum, norm (L2), numel, rank
+    """
+    tensor = torch.tensor(t, dtype=getattr(torch, dtype))
+    flat = tensor.flatten()
+    return {
+        "mean":  float(flat.mean()),
+        "std":   float(flat.std()) if flat.numel() > 1 else 0.0,
+        "min":   float(flat.min()),
+        "max":   float(flat.max()),
+        "sum":   float(flat.sum()),
+        "norm":  float(torch.linalg.norm(flat)),   # L2
+        "numel": int(flat.numel()),
+        "rank":  int(tensor.dim()),
+    }
 
 
 # ── Shape ops ─────────────────────────────────────────────────────────────────
@@ -84,10 +104,6 @@ def reshape_tensor(t: List, shape: List[int], dtype: str = "float32"):
 
 
 def transpose_tensor(t: List, dim0: int = 0, dim1: int = 1, dtype: str = "float32"):
-    """Swap two dimensions of a tensor using torch.transpose.
-
-    Works on any tensor with at least 2 dimensions.
-    For a 2-D matrix the default dim0=0, dim1=1 gives the classic transpose.
-    """
+    """Swap two dimensions. Default dim0=0, dim1=1 gives classic 2-D transpose."""
     tensor = torch.tensor(t, dtype=getattr(torch, dtype))
     return torch.transpose(tensor, dim0, dim1)

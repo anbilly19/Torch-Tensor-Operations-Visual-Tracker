@@ -3,6 +3,7 @@ import { useTensorStore } from '@/stores/tensorStore'
 import TensorCreator from '@/components/TensorCreator'
 import OperationPanel from '@/components/OperationPanel'
 import TensorDisplay from '@/components/TensorDisplay'
+import TensorStats from '@/components/TensorStats'
 import GraphDisplay from '@/components/GraphDisplay'
 import HistoryList from '@/components/HistoryList'
 import { Separator } from '@/components/ui/separator'
@@ -10,7 +11,7 @@ import { FlaskConical } from 'lucide-react'
 
 export default function App() {
   const currentTensor = useTensorStore((s) => s.currentTensor)
-  const graphImage = useTensorStore((s) => s.graphImage)
+  const graphImage    = useTensorStore((s) => s.graphImage)
 
   return (
     <div className="min-h-screen bg-zinc-50">
@@ -42,6 +43,7 @@ export default function App() {
           {/* Right panel */}
           <div className="flex-1 flex flex-col gap-4">
             <TensorDisplay tensor={currentTensor} title="Current Tensor" />
+            <TensorStats />
             <GraphDisplay image={graphImage} />
           </div>
         </div>

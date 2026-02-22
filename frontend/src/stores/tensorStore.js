@@ -3,10 +3,11 @@ import api from '../../api/client'
 
 export const useTensorStore = create((set, get) => ({
   originalTensor: null,
-  currentTensor: null,
-  operations: [],
-  graphImage: null,
-  history: [],
+  currentTensor:  null,
+  operations:     [],
+  graphImage:     null,
+  history:        [],
+  stats:          null,   // StatsResponse | null
 
   addHistory: (description) => {
     set((state) => ({
@@ -23,11 +24,13 @@ export const useTensorStore = create((set, get) => ({
       const tensor = response.data.data
       set({
         originalTensor: tensor,
-        currentTensor: tensor,
-        operations: [],
-        graphImage: null,
+        currentTensor:  tensor,
+        operations:     [],
+        graphImage:     null,
+        stats:          null,
       })
       get().addHistory(`Created tensor with ${op} shape [${shape}]`)
+      await get().fetchStats()
     } catch (error) {
       console.error('Creation failed:', error)
       throw error
@@ -45,14 +48,29 @@ export const useTensorStore = create((set, get) => ({
       const resultTensor = response.data.data
       const opRecord = { op: opName, params, tensor_b: params.tensor_b }
       set((state) => ({
-        operations: [...state.operations, opRecord],
+        operations:    [...state.operations, opRecord],
         currentTensor: resultTensor,
       }))
       get().addHistory(`Applied ${opName}`)
-      await get().generateGraph()
+      // Update stats and graph in parallel
+      await Promise.all([get().fetchStats(), get().generateGraph()])
     } catch (error) {
       console.error('Operation failed:', error)
       alert('Operation failed: ' + error.message)
+    }
+  },
+
+  fetchStats: async () => {
+    const { currentTensor } = get()
+    if (!currentTensor) {
+      set({ stats: null })
+      return
+    }
+    try {
+      const response = await api.fetchStats(currentTensor)
+      set({ stats: response.data })
+    } catch (error) {
+      console.error('Stats fetch failed:', error)
     }
   },
 
@@ -73,10 +91,11 @@ export const useTensorStore = create((set, get) => ({
   reset: () => {
     set({
       originalTensor: null,
-      currentTensor: null,
-      operations: [],
-      graphImage: null,
-      history: [],
+      currentTensor:  null,
+      operations:     [],
+      graphImage:     null,
+      history:        [],
+      stats:          null,
     })
   },
 }))

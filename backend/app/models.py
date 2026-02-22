@@ -49,6 +49,22 @@ class SumRequest(BaseModel):
     dtype: Optional[str] = "float32"
 
 
+class StatsRequest(BaseModel):
+    tensor: List
+    dtype: Optional[str] = "float32"
+
+
+class StatsResponse(BaseModel):
+    mean:  float
+    std:   float
+    min:   float
+    max:   float
+    sum:   float
+    norm:  float
+    numel: int
+    rank:  int
+
+
 # ── Shape requests ─────────────────────────────────────────────────────────────
 
 class ReshapeRequest(BaseModel):
