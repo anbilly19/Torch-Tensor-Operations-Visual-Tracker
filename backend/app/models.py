@@ -1,6 +1,7 @@
 from pydantic import BaseModel, Field
 from typing import List, Optional
 
+
 # ── Tensor creation ───────────────────────────────────────────────────────────
 
 class CreateRequest(BaseModel):
@@ -39,7 +40,7 @@ class ClampRequest(BaseModel):
     dtype: Optional[str] = "float32"
 
 
-# ── Reduction / shape requests ────────────────────────────────────────────────
+# ── Reduction requests ─────────────────────────────────────────────────────────
 
 class SumRequest(BaseModel):
     tensor: List
@@ -48,9 +49,18 @@ class SumRequest(BaseModel):
     dtype: Optional[str] = "float32"
 
 
+# ── Shape requests ─────────────────────────────────────────────────────────────
+
 class ReshapeRequest(BaseModel):
     tensor: List
     shape: List[int]
+    dtype: Optional[str] = "float32"
+
+
+class TransposeRequest(BaseModel):
+    tensor: List
+    dim0: int = 0
+    dim1: int = 1
     dtype: Optional[str] = "float32"
 
 

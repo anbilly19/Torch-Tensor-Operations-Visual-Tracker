@@ -67,7 +67,7 @@ def clamp_tensor(
     return torch.clamp(tensor, min=min_val, max=max_val)
 
 
-# ── Reduction / shape ops (existing) ─────────────────────────────────────────
+# ── Reduction ops ──────────────────────────────────────────────────────────────
 
 def sum_tensor(t: List, dim: Optional[int] = None, keepdim: bool = False, dtype: str = "float32"):
     tensor = torch.tensor(t, dtype=getattr(torch, dtype))
@@ -76,6 +76,18 @@ def sum_tensor(t: List, dim: Optional[int] = None, keepdim: bool = False, dtype:
     return tensor.sum(dim=dim, keepdim=keepdim)
 
 
+# ── Shape ops ─────────────────────────────────────────────────────────────────
+
 def reshape_tensor(t: List, shape: List[int], dtype: str = "float32"):
     tensor = torch.tensor(t, dtype=getattr(torch, dtype))
     return tensor.reshape(shape)
+
+
+def transpose_tensor(t: List, dim0: int = 0, dim1: int = 1, dtype: str = "float32"):
+    """Swap two dimensions of a tensor using torch.transpose.
+
+    Works on any tensor with at least 2 dimensions.
+    For a 2-D matrix the default dim0=0, dim1=1 gives the classic transpose.
+    """
+    tensor = torch.tensor(t, dtype=getattr(torch, dtype))
+    return torch.transpose(tensor, dim0, dim1)

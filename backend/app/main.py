@@ -13,7 +13,7 @@ app.add_middleware(
 
 
 def _resp(tensor, operation: str) -> dict:
-    """Helper to build a TensorResponse dict from a torch.Tensor."""
+    """Build a TensorResponse dict from a torch.Tensor."""
     return {
         "data": tensor.tolist(),
         "shape": list(tensor.shape),
@@ -109,7 +109,7 @@ def clamp_tensor(req: models.ClampRequest):
         raise HTTPException(status_code=400, detail=str(e))
 
 
-# ── Reduction / shape ops ─────────────────────────────────────────────────────
+# ── Reduction ops ─────────────────────────────────────────────────────────────
 
 @app.post("/sum", response_model=models.TensorResponse)
 def sum_tensor(req: models.SumRequest):
@@ -119,10 +119,23 @@ def sum_tensor(req: models.SumRequest):
         raise HTTPException(status_code=400, detail=str(e))
 
 
+# ── Shape ops ─────────────────────────────────────────────────────────────────
+
 @app.post("/reshape", response_model=models.TensorResponse)
 def reshape(req: models.ReshapeRequest):
     try:
         return _resp(operations.reshape_tensor(req.tensor, req.shape, req.dtype), "reshape")
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.post("/transpose", response_model=models.TensorResponse)
+def transpose(req: models.TransposeRequest):
+    try:
+        return _resp(
+            operations.transpose_tensor(req.tensor, req.dim0, req.dim1, req.dtype),
+            "transpose",
+        )
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
