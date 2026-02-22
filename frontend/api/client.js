@@ -7,41 +7,66 @@ const apiClient = axios.create({
   headers: { 'Content-Type': 'application/json' },
 });
 
-// ── Endpoint map ──────────────────────────────────────────────────────────────
+// ── Endpoint map ─────────────────────────────────────────────────────────────────
 const ENDPOINTS = {
   // Elementwise / scalar
-  add:       '/add',
-  sub:       '/sub',
-  mul:       '/mul',
-  div:       '/div',
-  matmul:    '/matmul',
-  abs:       '/abs',
-  neg:       '/neg',
-  clamp:     '/clamp',
+  add:                 '/add',
+  sub:                 '/sub',
+  mul:                 '/mul',
+  div:                 '/div',
+  matmul:              '/matmul',
+  abs:                 '/abs',
+  neg:                 '/neg',
+  clamp:               '/clamp',
   // Reduction
-  sum:       '/sum',
+  sum:                 '/sum',
   // Shape & indexing
-  reshape:   '/reshape',
-  transpose: '/transpose',
-  flatten:   '/flatten',
-  squeeze:   '/squeeze',
-  unsqueeze: '/unsqueeze',
-  permute:   '/permute',
-  tile:      '/tile',
-  repeat:    '/repeat',
-  narrow:    '/narrow',
-  chunk:     '/chunk',
-  cat:       '/cat',
-  stack:     '/stack',
+  reshape:             '/reshape',
+  transpose:           '/transpose',
+  flatten:             '/flatten',
+  squeeze:             '/squeeze',
+  unsqueeze:           '/unsqueeze',
+  permute:             '/permute',
+  tile:                '/tile',
+  repeat:              '/repeat',
+  narrow:              '/narrow',
+  chunk:               '/chunk',
+  cat:                 '/cat',
+  stack:               '/stack',
+  // Layer ops
+  linear:              '/linear',
+  conv1d:              '/conv1d',
+  conv2d:              '/conv2d',
+  maxpool1d:           '/maxpool1d',
+  maxpool2d:           '/maxpool2d',
+  avgpool1d:           '/avgpool1d',
+  avgpool2d:           '/avgpool2d',
+  adaptive_avgpool2d:  '/adaptive-avgpool2d',
+  embedding:           '/embedding',
+  sdpa:                '/sdpa',
 };
 
 const BINARY_OPS = new Set(['add', 'sub', 'mul', 'div', 'matmul']);
 const UNARY_OPS  = new Set(['abs', 'neg']);
+const LAYER_OPS  = new Set([
+  'linear', 'conv1d', 'conv2d',
+  'maxpool1d', 'maxpool2d', 'avgpool1d', 'avgpool2d',
+  'adaptive_avgpool2d', 'embedding', 'sdpa',
+]);
 
-// ── Request body builder ──────────────────────────────────────────────────────
+// ── Request body builder ────────────────────────────────────────────────────────
 function buildBody(opName, tensor, params) {
   if (BINARY_OPS.has(opName)) return { tensor_a: tensor, tensor_b: params.tensor_b };
   if (UNARY_OPS.has(opName))  return { tensor };
+
+  // Layer ops: params already contains the full body fields
+  if (LAYER_OPS.has(opName)) {
+    if (opName === 'sdpa') {
+      // SDPA: query IS the current tensor; key & value come from params
+      return { query: params.query ?? tensor, key: params.key, value: params.value };
+    }
+    return { tensor, ...params };
+  }
 
   switch (opName) {
     case 'clamp':
@@ -81,7 +106,7 @@ function buildBody(opName, tensor, params) {
   }
 }
 
-// ── Public API ─────────────────────────────────────────────────────────────────
+// ── Public API ────────────────────────────────────────────────────────────────────
 export default {
   createTensor(op, shape) {
     return apiClient.post('/create', { op, shape });
