@@ -1,9 +1,15 @@
 [phases.setup]
-# "..." preserves the provider defaults (Python + pip); graphviz adds the system binary
+# "..." preserves auto-detected Python/pip defaults; graphviz adds the system binary
 nixPkgs = ["...", "graphviz"]
 
-[phases.build]
-cmds = ["pip install -e ."]
+[phases.install]
+# Install CPU-only torch first from the lightweight index (~250 MB vs ~800 MB for CUDA)
+# then install the rest of the project deps normally
+cmds = [
+    "pip install torch --index-url https://download.pytorch.org/whl/cpu",
+    "pip install -e . --no-deps",
+    "pip install fastapi 'uvicorn[standard]' graphviz numpy pydantic python-multipart",
+]
 
 [start]
 cmd = "uvicorn app.main:app --host 0.0.0.0 --port $PORT"
