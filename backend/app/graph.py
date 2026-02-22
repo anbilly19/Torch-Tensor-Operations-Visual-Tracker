@@ -1,6 +1,5 @@
 import torch
-from typing import List, Dict, Any
-from .operations import tensor_stats
+from typing import List, Dict
 
 
 # ── PyTorch docs URLs ───────────────────────────────────────────────────────────
@@ -73,34 +72,56 @@ def _apply_op(current_t: torch.Tensor, step: Dict) -> torch.Tensor:
     params = step.get("params", {})
     tensor_b_data = step.get("tensor_b")
 
-    if op == "add":       return current_t + torch.tensor(tensor_b_data, dtype=torch.float32)
-    if op == "sub":       return current_t - torch.tensor(tensor_b_data, dtype=torch.float32)
-    if op == "mul":       return current_t * torch.tensor(tensor_b_data, dtype=torch.float32)
-    if op == "div":       return current_t / torch.tensor(tensor_b_data, dtype=torch.float32)
-    if op == "matmul":    return torch.matmul(current_t, torch.tensor(tensor_b_data, dtype=torch.float32))
-    if op == "abs":       return torch.abs(current_t)
-    if op == "neg":       return torch.neg(current_t)
-    if op == "clamp":     return torch.clamp(current_t, min=params.get("min_val"), max=params.get("max_val"))
-    if op == "sum":       return current_t.sum(dim=params.get("dim"), keepdim=params.get("keepdim", False))
-    if op == "reshape":   return current_t.reshape(params["shape"])
-    if op == "transpose": return torch.transpose(current_t, params.get("dim0", 0), params.get("dim1", 1))
-    if op == "flatten":   return torch.flatten(current_t, params.get("start_dim", 0), params.get("end_dim", -1))
+    if op == "add":
+        return current_t + torch.tensor(tensor_b_data, dtype=torch.float32)
+    if op == "sub":       
+        return current_t - torch.tensor(tensor_b_data, dtype=torch.float32)
+    if op == "mul":       
+        return current_t * torch.tensor(tensor_b_data, dtype=torch.float32)
+    if op == "div":       
+        return current_t / torch.tensor(tensor_b_data, dtype=torch.float32)
+    if op == "matmul":    
+        return torch.matmul(current_t, torch.tensor(tensor_b_data, dtype=torch.float32))
+    if op == "abs":       
+        return torch.abs(current_t)
+    if op == "neg":       
+        return torch.neg(current_t)
+    if op == "clamp":     
+        return torch.clamp(current_t, min=params.get("min_val"), max=params.get("max_val"))
+    if op == "sum":       
+        return current_t.sum(dim=params.get("dim"), keepdim=params.get("keepdim", False))
+    if op == "reshape":   
+        return current_t.reshape(params["shape"])
+    if op == "transpose": 
+        return torch.transpose(current_t, params.get("dim0", 0), params.get("dim1", 1))
+    if op == "flatten":   
+        return torch.flatten(current_t, params.get("start_dim", 0), params.get("end_dim", -1))
     if op == "squeeze":
         dim = params.get("dim")
-        if dim is None: return current_t.squeeze()
+        if dim is None: 
+            return current_t.squeeze()
         if isinstance(dim, list):
             out = current_t
-            for d in sorted(dim, reverse=True): out = out.squeeze(d)
+            for d in sorted(dim, reverse=True): 
+                out = out.squeeze(d)
             return out
         return current_t.squeeze(dim)
-    if op == "unsqueeze": return current_t.unsqueeze(params["dim"])
-    if op == "permute":   return current_t.permute(*params["dims"])
-    if op == "tile":      return torch.tile(current_t, tuple(params["dims"]))
-    if op == "repeat":    return current_t.repeat(*params["sizes"])
-    if op == "narrow":    return torch.narrow(current_t, dim=params["dim"], start=params["start"], length=params["length"])
-    if op == "chunk":     return torch.chunk(current_t, chunks=params["chunks"], dim=params.get("dim", 0))[0]
-    if op == "cat":       return torch.cat([torch.tensor(x, dtype=torch.float32) for x in params["tensors"]], dim=params.get("dim", 0))
-    if op == "stack":     return torch.stack([torch.tensor(x, dtype=torch.float32) for x in params["tensors"]], dim=params.get("dim", 0))
+    if op == "unsqueeze": 
+        return current_t.unsqueeze(params["dim"])
+    if op == "permute":   
+        return current_t.permute(*params["dims"])
+    if op == "tile":      
+        return torch.tile(current_t, tuple(params["dims"]))
+    if op == "repeat":    
+        return current_t.repeat(*params["sizes"])
+    if op == "narrow":    
+        return torch.narrow(current_t, dim=params["dim"], start=params["start"], length=params["length"])
+    if op == "chunk":     
+        return torch.chunk(current_t, chunks=params["chunks"], dim=params.get("dim", 0))[0]
+    if op == "cat":       
+        return torch.cat([torch.tensor(x, dtype=torch.float32) for x in params["tensors"]], dim=params.get("dim", 0))
+    if op == "stack":     
+        return torch.stack([torch.tensor(x, dtype=torch.float32) for x in params["tensors"]], dim=params.get("dim", 0))
     raise ValueError(f"Unsupported operation: {op}")
 
 
