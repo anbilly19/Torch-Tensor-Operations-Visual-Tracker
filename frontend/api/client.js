@@ -9,6 +9,7 @@ const apiClient = axios.create({
 
 // ── Endpoint map ──────────────────────────────────────────────────────────────
 const ENDPOINTS = {
+  // Elementwise / scalar
   add:       '/add',
   sub:       '/sub',
   mul:       '/mul',
@@ -17,32 +18,70 @@ const ENDPOINTS = {
   abs:       '/abs',
   neg:       '/neg',
   clamp:     '/clamp',
+  // Reduction
   sum:       '/sum',
+  // Shape & indexing
   reshape:   '/reshape',
   transpose: '/transpose',
+  flatten:   '/flatten',
+  squeeze:   '/squeeze',
+  unsqueeze: '/unsqueeze',
+  permute:   '/permute',
+  tile:      '/tile',
+  repeat:    '/repeat',
+  narrow:    '/narrow',
+  chunk:     '/chunk',
+  cat:       '/cat',
+  stack:     '/stack',
 };
 
 const BINARY_OPS = new Set(['add', 'sub', 'mul', 'div', 'matmul']);
 const UNARY_OPS  = new Set(['abs', 'neg']);
 
-// ── Request body builder ───────────────────────────────────────────────────
+// ── Request body builder ──────────────────────────────────────────────────────
 function buildBody(opName, tensor, params) {
   if (BINARY_OPS.has(opName)) return { tensor_a: tensor, tensor_b: params.tensor_b };
   if (UNARY_OPS.has(opName))  return { tensor };
-  if (opName === 'clamp') {
-    return {
-      tensor,
-      ...(params.min_val !== undefined && { min_val: params.min_val }),
-      ...(params.max_val !== undefined && { max_val: params.max_val }),
-    };
+
+  switch (opName) {
+    case 'clamp':
+      return {
+        tensor,
+        ...(params.min_val !== undefined && { min_val: params.min_val }),
+        ...(params.max_val !== undefined && { max_val: params.max_val }),
+      };
+    case 'sum':
+      return { tensor, dim: params.dim ?? null, keepdim: params.keepdim ?? false };
+    case 'reshape':
+      return { tensor, shape: params.shape };
+    case 'transpose':
+      return { tensor, dim0: params.dim0 ?? 0, dim1: params.dim1 ?? 1 };
+    case 'flatten':
+      return { tensor, start_dim: params.start_dim ?? 0, end_dim: params.end_dim ?? -1 };
+    case 'squeeze':
+      return { tensor, ...(params.dim !== undefined && params.dim !== '' && { dim: params.dim }) };
+    case 'unsqueeze':
+      return { tensor, dim: params.dim ?? 0 };
+    case 'permute':
+      return { tensor, dims: params.dims };
+    case 'tile':
+      return { tensor, dims: params.dims };
+    case 'repeat':
+      return { tensor, sizes: params.sizes };
+    case 'narrow':
+      return { tensor, dim: params.dim ?? 0, start: params.start ?? 0, length: params.length ?? 1 };
+    case 'chunk':
+      return { tensor, chunks: params.chunks ?? 2, dim: params.dim ?? 0 };
+    case 'cat':
+      return { tensors: params.tensors, dim: params.dim ?? 0 };
+    case 'stack':
+      return { tensors: params.tensors, dim: params.dim ?? 0 };
+    default:
+      throw new Error(`Unsupported operation: ${opName}`);
   }
-  if (opName === 'sum')       return { tensor, dim: params.dim ?? null, keepdim: params.keepdim ?? false };
-  if (opName === 'reshape')   return { tensor, shape: params.shape };
-  if (opName === 'transpose') return { tensor, dim0: params.dim0 ?? 0, dim1: params.dim1 ?? 1 };
-  throw new Error(`Unsupported operation: ${opName}`);
 }
 
-// ── Public API ────────────────────────────────────────────────────────────────
+// ── Public API ─────────────────────────────────────────────────────────────────
 export default {
   createTensor(op, shape) {
     return apiClient.post('/create', { op, shape });

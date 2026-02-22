@@ -8,6 +8,7 @@ export const useTensorStore = create((set, get) => ({
   graphImage:     null,
   history:        [],
   stats:          null,   // StatsResponse | null
+  chunkTensors:   null,   // List<TensorResponse> | null — populated by /chunk
 
   addHistory: (description) => {
     set((state) => ({
@@ -28,6 +29,7 @@ export const useTensorStore = create((set, get) => ({
         operations:     [],
         graphImage:     null,
         stats:          null,
+        chunkTensors:   null,
       })
       get().addHistory(`Created tensor with ${op} shape [${shape}]`)
       await get().fetchStats()
@@ -45,18 +47,33 @@ export const useTensorStore = create((set, get) => ({
     }
     try {
       const response = await api.applyOperation(opName, currentTensor, params)
-      const resultTensor = response.data.data
-      const opRecord = { op: opName, params, tensor_b: params.tensor_b }
+      const responseData = response.data
+
+      // chunk returns TensorsResponse { tensors: [...], operation }
+      // all other ops return TensorResponse { data: [...], ... }
+      const isChunk = opName === 'chunk'
+      const resultTensor = isChunk
+        ? responseData.tensors[0].data   // follow first chunk as current
+        : responseData.data
+
+      const opRecord = { op: opName, params, tensor_b: params.tensor_b ?? null }
+
       set((state) => ({
         operations:    [...state.operations, opRecord],
         currentTensor: resultTensor,
+        chunkTensors:  isChunk ? responseData.tensors : null,
       }))
-      get().addHistory(`Applied ${opName}`)
+
+      const chunkLabel = isChunk
+        ? ` (${responseData.tensors.length} chunks, following chunk[0])`
+        : ''
+      get().addHistory(`Applied ${opName}${chunkLabel}`)
+
       // Update stats and graph in parallel
       await Promise.all([get().fetchStats(), get().generateGraph()])
     } catch (error) {
       console.error('Operation failed:', error)
-      alert('Operation failed: ' + error.message)
+      alert('Operation failed: ' + (error.response?.data?.detail ?? error.message))
     }
   },
 
@@ -96,6 +113,7 @@ export const useTensorStore = create((set, get) => ({
       graphImage:     null,
       history:        [],
       stats:          null,
+      chunkTensors:   null,
     })
   },
 }))
