@@ -3,9 +3,16 @@ nixPkgs = ["...", "graphviz"]
 
 [phases.install]
 cmds = [
-    "uv pip install torch --index-url https://download.pytorch.org/whl/cpu",
-    "uv pip install -e . --no-deps",
-    "uv pip install fastapi 'uvicorn[standard]' graphviz numpy pydantic python-multipart",
+    # Nixpacks doesn't pre-activate the venv when phases.install is overridden,
+    # so we create it ourselves and prefix every pip call with the activation.
+    "python -m venv /opt/venv",
+    "/opt/venv/bin/pip install --upgrade pip",
+    # Install CPU-only torch (~250 MB) instead of the default CUDA build (~800 MB)
+    "/opt/venv/bin/pip install torch --index-url https://download.pytorch.org/whl/cpu",
+    # Install the project without re-resolving torch
+    "/opt/venv/bin/pip install -e . --no-deps",
+    # Install remaining deps
+    "/opt/venv/bin/pip install fastapi 'uvicorn[standard]' graphviz numpy pydantic python-multipart",
 ]
 
 [start]
