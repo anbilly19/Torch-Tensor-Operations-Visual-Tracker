@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import List, Optional
+from typing import List, Optional, Union
 
 
 # ── Tensor creation ───────────────────────────────────────────────────────────
@@ -40,7 +40,7 @@ class ClampRequest(BaseModel):
     dtype: Optional[str] = "float32"
 
 
-# ── Reduction requests ─────────────────────────────────────────────────────────
+# ── Reduction requests ────────────────────────────────────────────────────────
 
 class SumRequest(BaseModel):
     tensor: List
@@ -65,7 +65,7 @@ class StatsResponse(BaseModel):
     rank:  int
 
 
-# ── Shape requests ─────────────────────────────────────────────────────────────
+# ── Shape & indexing requests ─────────────────────────────────────────────────
 
 class ReshapeRequest(BaseModel):
     tensor: List
@@ -80,12 +80,84 @@ class TransposeRequest(BaseModel):
     dtype: Optional[str] = "float32"
 
 
+class FlattenRequest(BaseModel):
+    tensor: List
+    start_dim: int = 0
+    end_dim: int = -1
+    dtype: Optional[str] = "float32"
+
+
+class SqueezeRequest(BaseModel):
+    tensor: List
+    dim: Optional[Union[int, List[int]]] = None
+    dtype: Optional[str] = "float32"
+
+
+class UnsqueezeRequest(BaseModel):
+    tensor: List
+    dim: int
+    dtype: Optional[str] = "float32"
+
+
+class PermuteRequest(BaseModel):
+    tensor: List
+    dims: List[int]
+    dtype: Optional[str] = "float32"
+
+
+class TileRequest(BaseModel):
+    tensor: List
+    dims: List[int]
+    dtype: Optional[str] = "float32"
+
+
+class RepeatRequest(BaseModel):
+    tensor: List
+    sizes: List[int]
+    dtype: Optional[str] = "float32"
+
+
+class NarrowRequest(BaseModel):
+    tensor: List
+    dim: int
+    start: int
+    length: int
+    dtype: Optional[str] = "float32"
+
+
+class ChunkRequest(BaseModel):
+    tensor: List
+    chunks: int
+    dim: int = 0
+    dtype: Optional[str] = "float32"
+
+
+class CatRequest(BaseModel):
+    """Concatenate along an existing dim. `tensors[0]` is the primary tensor."""
+    tensors: List[List]
+    dim: int = 0
+    dtype: Optional[str] = "float32"
+
+
+class StackRequest(BaseModel):
+    """Stack along a NEW dim. All tensors must have the same shape. `tensors[0]` is the primary tensor."""
+    tensors: List[List]
+    dim: int = 0
+    dtype: Optional[str] = "float32"
+
+
 # ── Response models ───────────────────────────────────────────────────────────
 
 class TensorResponse(BaseModel):
     data: List
     shape: List[int]
     dtype: str
+    operation: str
+
+
+class TensorsResponse(BaseModel):
+    """Used by ops that return multiple tensors (e.g. chunk)."""
+    tensors: List[TensorResponse]
     operation: str
 
 

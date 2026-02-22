@@ -22,6 +22,14 @@ def _resp(tensor, operation: str) -> dict:
     }
 
 
+def _resp_many(tensors, operation: str) -> dict:
+    """Build a TensorsResponse dict from a list of torch.Tensors."""
+    return {
+        "tensors": [_resp(t, operation) for t in tensors],
+        "operation": operation,
+    }
+
+
 @app.get("/")
 def root():
     return {"message": "PyTorch Tensor Operations API. Use /docs for interactive docs."}
@@ -128,7 +136,7 @@ def tensor_stats(req: models.StatsRequest):
         raise HTTPException(status_code=400, detail=str(e))
 
 
-# ── Shape ops ─────────────────────────────────────────────────────────────────
+# ── Shape & indexing ops ──────────────────────────────────────────────────────
 
 @app.post("/reshape", response_model=models.TensorResponse)
 def reshape(req: models.ReshapeRequest):
@@ -145,6 +153,96 @@ def transpose(req: models.TransposeRequest):
             operations.transpose_tensor(req.tensor, req.dim0, req.dim1, req.dtype),
             "transpose",
         )
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.post("/flatten", response_model=models.TensorResponse)
+def flatten(req: models.FlattenRequest):
+    try:
+        return _resp(
+            operations.flatten_tensor(req.tensor, req.start_dim, req.end_dim, req.dtype),
+            "flatten",
+        )
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.post("/squeeze", response_model=models.TensorResponse)
+def squeeze(req: models.SqueezeRequest):
+    try:
+        return _resp(operations.squeeze_tensor(req.tensor, req.dim, req.dtype), "squeeze")
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.post("/unsqueeze", response_model=models.TensorResponse)
+def unsqueeze(req: models.UnsqueezeRequest):
+    try:
+        return _resp(operations.unsqueeze_tensor(req.tensor, req.dim, req.dtype), "unsqueeze")
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.post("/permute", response_model=models.TensorResponse)
+def permute(req: models.PermuteRequest):
+    try:
+        return _resp(operations.permute_tensor(req.tensor, req.dims, req.dtype), "permute")
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.post("/tile", response_model=models.TensorResponse)
+def tile(req: models.TileRequest):
+    try:
+        return _resp(operations.tile_tensor(req.tensor, req.dims, req.dtype), "tile")
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.post("/repeat", response_model=models.TensorResponse)
+def repeat(req: models.RepeatRequest):
+    try:
+        return _resp(operations.repeat_tensor(req.tensor, req.sizes, req.dtype), "repeat")
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.post("/narrow", response_model=models.TensorResponse)
+def narrow(req: models.NarrowRequest):
+    try:
+        return _resp(
+            operations.narrow_tensor(req.tensor, req.dim, req.start, req.length, req.dtype),
+            "narrow",
+        )
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.post("/chunk", response_model=models.TensorsResponse)
+def chunk(req: models.ChunkRequest):
+    """Split into up to `chunks` pieces. Returns TensorsResponse (may be fewer than requested)."""
+    try:
+        ts = operations.chunk_tensor(req.tensor, req.chunks, req.dim, req.dtype)
+        return _resp_many(ts, "chunk")
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.post("/cat", response_model=models.TensorResponse)
+def cat(req: models.CatRequest):
+    """Concatenate along an existing dim. `tensors[0]` is the primary tensor."""
+    try:
+        return _resp(operations.cat_tensors(req.tensors, req.dim, req.dtype), "cat")
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.post("/stack", response_model=models.TensorResponse)
+def stack(req: models.StackRequest):
+    """Stack along a NEW dim. `tensors[0]` is the primary tensor."""
+    try:
+        return _resp(operations.stack_tensors(req.tensors, req.dim, req.dtype), "stack")
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
