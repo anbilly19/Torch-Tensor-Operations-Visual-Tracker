@@ -2,12 +2,14 @@
 
 An interactive full-stack web application for exploring PyTorch tensor operations step-by-step — with live shape tracking, computation graph visualization, per-operation stats, and inline PyTorch documentation links.
 
+> **Live demo** — the published URL is listed under the [Deployments](../../deployments) section of this repository (look for the latest `Production` deployment from Vercel).
+
 ---
 
 ## Features
 
-- **21 tensor operations** across four categories: elementwise, reduction, shape & indexing, and joining
-- **Computation graph** — DAG rendered with Graphviz, showing tensor shapes at every step
+- **31 tensor operations** across five categories: elementwise, reduction, shape & indexing, joining, and layers
+- **Interactive computation graph** — DAG rendered with React Flow; hover tensor nodes for live stats, click op nodes to open PyTorch docs
 - **Live statistics** — mean, std, min, max, sum, norm, numel, rank updated after each op
 - **Operation history** — timestamped log of every applied operation
 - **PyTorch docs pill** — one-click link to the official PyTorch API page for the selected op
@@ -26,9 +28,9 @@ An interactive full-stack web application for exploring PyTorch tensor operation
 │   │   ├── components/
 │   │   │   ├── TensorCreator.jsx     # Create tensors with shape presets
 │   │   │   ├── OperationPanel.jsx    # Select & configure ops, docs link
-│   │   │   ├── TensorDisplay.jsx     # Grid view of current tensor values
-│   │   │   ├── GraphDisplay.jsx      # Computation graph (base64 PNG)
-│   │   │   ├── StatsPanel.jsx        # Summary statistics
+│   │   │   ├── TensorDisplay.jsx     # Shape / rank / numel / dtype summary
+│   │   │   ├── GraphDisplay.jsx      # Interactive React Flow computation graph
+│   │   │   ├── TensorStats.jsx       # Summary statistics
 │   │   │   └── HistoryList.jsx       # Timestamped op log
 │   │   ├── stores/
 │   │   │   └── tensorStore.js        # Zustand global state
@@ -40,7 +42,7 @@ An interactive full-stack web application for exploring PyTorch tensor operation
     │   ├── main.py               # Routes
     │   ├── models.py             # Pydantic request / response models
     │   ├── operations.py         # PyTorch operation implementations
-    │   └── graph.py              # Graphviz DAG builder
+    │   └── graph.py              # React Flow graph data builder
     └── pyproject.toml
 ```
 
@@ -51,12 +53,12 @@ An interactive full-stack web application for exploring PyTorch tensor operation
 | Layer | Technology |
 |---|---|
 | UI framework | React 18 + Vite |
+| Graph rendering | React Flow (@xyflow/react) |
 | State management | Zustand |
 | Styling | Tailwind CSS + shadcn/ui |
 | HTTP client | Axios |
 | API server | FastAPI |
 | Tensor ops | PyTorch |
-| Graph rendering | Graphviz (Python) |
 | Data validation | Pydantic v2 |
 
 ---
@@ -95,7 +97,7 @@ An interactive full-stack web application for exploring PyTorch tensor operation
 | Tile | `POST /tile` | `dims: [int, ...]` repeat counts per axis |
 | Repeat | `POST /repeat` | `sizes: [int, ...]` copies per axis |
 | Narrow | `POST /narrow` | `dim`, `start`, `length` |
-| Chunk | `POST /chunk` | `chunks`, `dim`; returns `TensorsResponse` (may be < `chunks` pieces) |
+| Chunk | `POST /chunk` | `chunks`, `dim`; returns `TensorsResponse` |
 
 ### Joining
 
@@ -104,13 +106,28 @@ An interactive full-stack web application for exploring PyTorch tensor operation
 | Cat | `POST /cat` | Concatenate along existing dim; `tensors[0]` is current tensor |
 | Stack | `POST /stack` | Stack along new dim; all tensors must share shape |
 
+### Layers (shape-altering)
+
+| Op | Endpoint | Notes |
+|---|---|---|
+| Linear | `POST /linear` | `out_features`; weight auto-init Kaiming uniform |
+| Conv1D | `POST /conv1d` | `out_channels`, `kernel_size`, `stride`, `padding` |
+| Conv2D | `POST /conv2d` | Same as above, 2D |
+| MaxPool1D | `POST /maxpool1d` | `kernel_size`, `stride` |
+| MaxPool2D | `POST /maxpool2d` | `kernel_size`, `stride` |
+| AvgPool1D | `POST /avgpool1d` | `kernel_size`, `stride` |
+| AvgPool2D | `POST /avgpool2d` | `kernel_size`, `stride` |
+| Adaptive AvgPool2D | `POST /adaptive-avgpool2d` | `output_size: [H, W]` |
+| Embedding | `POST /embedding` | Integer indices in; `embed_dim`, optional `vocab_size` |
+| Scaled Dot-Product Attention | `POST /sdpa` | Separate `query`, `key`, `value` inputs |
+
 ### Utilities
 
 | Op | Endpoint | Notes |
 |---|---|---|
 | Stats | `POST /stats` | Read-only; returns mean, std, min, max, sum, norm, numel, rank |
 | Create | `POST /create` | `op: "ones" \| "zeros"`, `shape` |
-| Cumulative graph | `POST /cumulative-graph` | Returns base64 PNG of full op DAG |
+| Cumulative graph | `POST /cumulative-graph` | Returns `{ nodes, edges }` for React Flow |
 
 ---
 
@@ -123,15 +140,7 @@ cd backend
 pip install -e .
 ```
 
-Requires Python ≥ 3.10 and the `graphviz` system binary:
-
-```bash
-# macOS
-brew install graphviz
-
-# Ubuntu / Debian
-sudo apt install graphviz
-```
+Requires Python ≥ 3.10.
 
 ### Frontend
 
@@ -161,29 +170,31 @@ npm run dev
 
 ## Usage
 
-1. **Create a tensor** — pick `ones` or `zeros`, type a shape or click a preset (`2×2`, `3×3`, `4×3`, `2×1×2`, `1×3×3`)
-2. **Select an operation** — grouped dropdown; a **PyTorch docs** pill appears next to the label linking to the official API page
-3. **Configure parameters** — contextual inputs appear for the chosen op (dim, shape, extra tensors, etc.)
-4. **Apply** — the result tensor, stats, and computation graph all update instantly
-5. **Chunk** — after a chunk op, an info box shows all chunk shapes; `currentTensor` follows `chunk[0]`
-6. **Cat / Stack** — extra tensors textarea is pre-seeded with a same-shape tensor; current tensor is always `tensors[0]`
+1. **Create a tensor** — pick `ones` or `zeros`, type a shape or click a preset
+2. **Select an operation** — grouped dropdown with four categories; a **PyTorch docs** pill links to the official API page
+3. **Configure parameters** — contextual inputs appear for the chosen op (dim, shape, extra tensors, conv params, etc.)
+4. **Apply** — the result shape, stats, and computation graph all update instantly
+5. **Graph** — hover blue tensor nodes for full stats popover; click green op nodes to open PyTorch docs; pan, zoom, and minimap supported
+6. **Chunk** — after a chunk op, an info box shows all chunk shapes; `currentTensor` follows `chunk[0]`
+7. **SDPA** — current tensor is used as Query; provide Key and Value tensors in the param panel
 
 ---
 
 ## API Response Models
 
 ```json
-// TensorResponse (single tensor)
+// TensorResponse
 { "data": [[1,2],[3,4]], "shape": [2,2], "dtype": "float32", "operation": "add" }
 
 // TensorsResponse (chunk)
-{ "tensors": [ { "data": ..., "shape": ..., "dtype": ..., "operation": "chunk" }, ... ], "operation": "chunk" }
+{ "tensors": [ { "data": ..., "shape": ..., "dtype": ..., "operation": "chunk" } ], "operation": "chunk" }
 
 // StatsResponse
 { "mean": 1.0, "std": 0.0, "min": 1.0, "max": 1.0, "sum": 9.0, "norm": 3.0, "numel": 9, "rank": 2 }
 
 // GraphResponse
-{ "image": "data:image/png;base64,..." }
+{ "nodes": [ { "id": "t0", "type": "tensor", "label": "Tensor 0", "shape": [2,2], "stats": {...} } ],
+  "edges": [ { "id": "e0_in", "source": "t0", "target": "op0" } ] }
 ```
 
 ---
@@ -193,9 +204,9 @@ npm run dev
 | Setting | Default | Location |
 |---|---|---|
 | Backend port | `8000` | `uvicorn` CLI |
-| CORS origins | `*` | `backend/app/main.py` |
+| CORS origins | `*` (dev) / regex Vercel (prod) | `backend/app/main.py` |
 | Default dtype | `float32` | Per-request param |
-| API base URL | `http://localhost:8000` | `frontend/api/client.js` |
+| API base URL | `http://localhost:8000` | `VITE_API_URL` env var |
 
 ---
 
