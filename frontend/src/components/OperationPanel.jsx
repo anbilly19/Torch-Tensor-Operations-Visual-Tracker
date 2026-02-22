@@ -16,7 +16,32 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
-import { Play } from 'lucide-react'
+import { Play, BookOpen } from 'lucide-react'
+
+// ── PyTorch docs links per operation ────────────────────────────────────────
+const DOCS = {
+  add:       'https://pytorch.org/docs/stable/generated/torch.add.html',
+  sub:       'https://pytorch.org/docs/stable/generated/torch.sub.html',
+  mul:       'https://pytorch.org/docs/stable/generated/torch.mul.html',
+  div:       'https://pytorch.org/docs/stable/generated/torch.div.html',
+  matmul:    'https://pytorch.org/docs/stable/generated/torch.matmul.html',
+  abs:       'https://pytorch.org/docs/stable/generated/torch.abs.html',
+  neg:       'https://pytorch.org/docs/stable/generated/torch.neg.html',
+  clamp:     'https://pytorch.org/docs/stable/generated/torch.clamp.html',
+  sum:       'https://pytorch.org/docs/stable/generated/torch.sum.html',
+  reshape:   'https://pytorch.org/docs/stable/generated/torch.reshape.html',
+  transpose: 'https://pytorch.org/docs/stable/generated/torch.transpose.html',
+  flatten:   'https://pytorch.org/docs/stable/generated/torch.flatten.html',
+  squeeze:   'https://pytorch.org/docs/stable/generated/torch.squeeze.html',
+  unsqueeze: 'https://pytorch.org/docs/stable/generated/torch.unsqueeze.html',
+  permute:   'https://pytorch.org/docs/stable/generated/torch.permute.html',
+  tile:      'https://pytorch.org/docs/stable/generated/torch.tile.html',
+  repeat:    'https://pytorch.org/docs/stable/generated/torch.Tensor.repeat.html',
+  narrow:    'https://pytorch.org/docs/stable/generated/torch.narrow.html',
+  chunk:     'https://pytorch.org/docs/stable/generated/torch.chunk.html',
+  cat:       'https://pytorch.org/docs/stable/generated/torch.cat.html',
+  stack:     'https://pytorch.org/docs/stable/generated/torch.stack.html',
+}
 
 const OPERATIONS = [
   {
@@ -91,7 +116,6 @@ export default function OperationPanel() {
   const [narrowLength, setNarrowLength]   = useState('1')
   const [chunkN, setChunkN]               = useState('3')
   const [chunkDim, setChunkDim]           = useState('0')
-  // cat / stack: JSON array of tensors; currentTensor is pre-seeded as first
   const [catTensors, setCatTensors]       = useState('[]')
   const [catDim, setCatDim]               = useState('0')
   const [stackTensors, setStackTensors]   = useState('[]')
@@ -100,7 +124,6 @@ export default function OperationPanel() {
   // Keep cat/stack extra-tensor placeholders in sync with current tensor shape
   useEffect(() => {
     if (!currentTensor) return
-    // Default extra tensor: same shape filled with 2s
     function shapeLike(t) {
       if (!Array.isArray(t)) return 2
       return t.map(shapeLike)
@@ -111,6 +134,7 @@ export default function OperationPanel() {
   }, [currentTensor])
 
   const isBinary = ALL_OPS.find((o) => o.value === selectedOp)?.binary ?? false
+  const docsUrl  = DOCS[selectedOp] ?? null
 
   async function handleApply() {
     let params = {}
@@ -168,7 +192,6 @@ export default function OperationPanel() {
         let extras
         try { extras = JSON.parse(catTensors) }
         catch { alert('Invalid JSON for extra tensors'); return }
-        // currentTensor is always prepended as tensors[0]
         params.tensors = [currentTensor, ...extras]
         params.dim     = Number(catDim)
         break
@@ -196,9 +219,22 @@ export default function OperationPanel() {
       </CardHeader>
       <CardContent className="space-y-4">
 
-        {/* Operation selector */}
+        {/* Operation selector + docs link */}
         <div className="space-y-1">
-          <Label>Operation</Label>
+          <div className="flex items-center justify-between">
+            <Label>Operation</Label>
+            {docsUrl && (
+              <a
+                href={docsUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 rounded-full border border-blue-200 bg-blue-50 px-2 py-0.5 text-[11px] font-medium text-blue-600 transition-colors hover:bg-blue-100 hover:text-blue-700"
+              >
+                <BookOpen className="h-3 w-3" />
+                PyTorch docs
+              </a>
+            )}
+          </div>
           <Select value={selectedOp} onValueChange={setSelectedOp}>
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
