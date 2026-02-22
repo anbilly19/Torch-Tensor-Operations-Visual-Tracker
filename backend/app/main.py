@@ -1,12 +1,22 @@
+import os
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from . import models, operations, graph
 
 app = FastAPI(title="PyTorch Tensor Operations API")
 
+# ── CORS ───────────────────────────────────────────────────────────────────
+# ALLOWED_ORIGINS env var is a comma-separated list of exact origins.
+# Falls back to '*' in local/dev when the var is not set.
+# On Railway, set ALLOWED_ORIGINS to your Vercel production URL(s).
+_raw = os.environ.get("ALLOWED_ORIGINS", "")
+_explicit = [o.strip() for o in _raw.split(",") if o.strip()]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=_explicit if _explicit else ["*"],
+    # Also allow any *.vercel.app preview deploy automatically
+    allow_origin_regex=r"https://.*\.vercel\.app",
     allow_methods=["*"],
     allow_headers=["*"],
 )
