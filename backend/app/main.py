@@ -59,14 +59,12 @@ def add_tensors(req: models.BinaryOpRequest):
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-
 @app.post("/sub", response_model=models.TensorResponse)
 def sub_tensors(req: models.BinaryOpRequest):
     try:
         return _resp(operations.sub_tensors(req.tensor_a, req.tensor_b, req.dtype), "sub")
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
-
 
 @app.post("/mul", response_model=models.TensorResponse)
 def mul_tensors(req: models.BinaryOpRequest):
@@ -75,14 +73,12 @@ def mul_tensors(req: models.BinaryOpRequest):
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-
 @app.post("/div", response_model=models.TensorResponse)
 def div_tensors(req: models.BinaryOpRequest):
     try:
         return _resp(operations.div_tensors(req.tensor_a, req.tensor_b, req.dtype), "div")
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
-
 
 @app.post("/matmul", response_model=models.TensorResponse)
 def matmul(req: models.MatMulRequest):
@@ -101,7 +97,6 @@ def abs_tensor(req: models.UnaryOpRequest):
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-
 @app.post("/neg", response_model=models.TensorResponse)
 def neg_tensor(req: models.UnaryOpRequest):
     try:
@@ -109,14 +104,10 @@ def neg_tensor(req: models.UnaryOpRequest):
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-
 @app.post("/clamp", response_model=models.TensorResponse)
 def clamp_tensor(req: models.ClampRequest):
     try:
-        return _resp(
-            operations.clamp_tensor(req.tensor, req.min_val, req.max_val, req.dtype),
-            "clamp",
-        )
+        return _resp(operations.clamp_tensor(req.tensor, req.min_val, req.max_val, req.dtype), "clamp")
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -129,7 +120,6 @@ def sum_tensor(req: models.SumRequest):
         return _resp(operations.sum_tensor(req.tensor, req.dim, req.keepdim, req.dtype), "sum")
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
-
 
 @app.post("/stats", response_model=models.StatsResponse)
 def tensor_stats(req: models.StatsRequest):
@@ -148,14 +138,12 @@ def reshape(req: models.ReshapeRequest):
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-
 @app.post("/transpose", response_model=models.TensorResponse)
 def transpose(req: models.TransposeRequest):
     try:
         return _resp(operations.transpose_tensor(req.tensor, req.dim0, req.dim1, req.dtype), "transpose")
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
-
 
 @app.post("/flatten", response_model=models.TensorResponse)
 def flatten(req: models.FlattenRequest):
@@ -164,14 +152,12 @@ def flatten(req: models.FlattenRequest):
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-
 @app.post("/squeeze", response_model=models.TensorResponse)
 def squeeze(req: models.SqueezeRequest):
     try:
         return _resp(operations.squeeze_tensor(req.tensor, req.dim, req.dtype), "squeeze")
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
-
 
 @app.post("/unsqueeze", response_model=models.TensorResponse)
 def unsqueeze(req: models.UnsqueezeRequest):
@@ -180,14 +166,12 @@ def unsqueeze(req: models.UnsqueezeRequest):
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-
 @app.post("/permute", response_model=models.TensorResponse)
 def permute(req: models.PermuteRequest):
     try:
         return _resp(operations.permute_tensor(req.tensor, req.dims, req.dtype), "permute")
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
-
 
 @app.post("/tile", response_model=models.TensorResponse)
 def tile(req: models.TileRequest):
@@ -196,7 +180,6 @@ def tile(req: models.TileRequest):
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-
 @app.post("/repeat", response_model=models.TensorResponse)
 def repeat(req: models.RepeatRequest):
     try:
@@ -204,14 +187,12 @@ def repeat(req: models.RepeatRequest):
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-
 @app.post("/narrow", response_model=models.TensorResponse)
 def narrow(req: models.NarrowRequest):
     try:
         return _resp(operations.narrow_tensor(req.tensor, req.dim, req.start, req.length, req.dtype), "narrow")
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
-
 
 @app.post("/chunk", response_model=models.TensorsResponse)
 def chunk(req: models.ChunkRequest):
@@ -221,7 +202,6 @@ def chunk(req: models.ChunkRequest):
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-
 @app.post("/cat", response_model=models.TensorResponse)
 def cat(req: models.CatRequest):
     try:
@@ -229,11 +209,89 @@ def cat(req: models.CatRequest):
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-
 @app.post("/stack", response_model=models.TensorResponse)
 def stack(req: models.StackRequest):
     try:
         return _resp(operations.stack_tensors(req.tensors, req.dim, req.dtype), "stack")
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+# ── Layer ops (shape-altering) ───────────────────────────────────────────────────
+
+@app.post("/linear", response_model=models.TensorResponse)
+def linear(req: models.LinearRequest):
+    try:
+        return _resp(operations.linear_layer(req.tensor, req.out_features, req.dtype), "linear")
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@app.post("/conv1d", response_model=models.TensorResponse)
+def conv1d(req: models.Conv1dRequest):
+    try:
+        return _resp(
+            operations.conv1d_layer(req.tensor, req.out_channels, req.kernel_size, req.stride, req.padding, req.dtype),
+            "conv1d",
+        )
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@app.post("/conv2d", response_model=models.TensorResponse)
+def conv2d(req: models.Conv2dRequest):
+    try:
+        return _resp(
+            operations.conv2d_layer(req.tensor, req.out_channels, req.kernel_size, req.stride, req.padding, req.dtype),
+            "conv2d",
+        )
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@app.post("/maxpool1d", response_model=models.TensorResponse)
+def maxpool1d(req: models.MaxPool1dRequest):
+    try:
+        return _resp(operations.maxpool1d_layer(req.tensor, req.kernel_size, req.stride, req.dtype), "maxpool1d")
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@app.post("/maxpool2d", response_model=models.TensorResponse)
+def maxpool2d(req: models.MaxPool2dRequest):
+    try:
+        return _resp(operations.maxpool2d_layer(req.tensor, req.kernel_size, req.stride, req.dtype), "maxpool2d")
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@app.post("/avgpool1d", response_model=models.TensorResponse)
+def avgpool1d(req: models.AvgPool1dRequest):
+    try:
+        return _resp(operations.avgpool1d_layer(req.tensor, req.kernel_size, req.stride, req.dtype), "avgpool1d")
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@app.post("/avgpool2d", response_model=models.TensorResponse)
+def avgpool2d(req: models.AvgPool2dRequest):
+    try:
+        return _resp(operations.avgpool2d_layer(req.tensor, req.kernel_size, req.stride, req.dtype), "avgpool2d")
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@app.post("/adaptive-avgpool2d", response_model=models.TensorResponse)
+def adaptive_avgpool2d(req: models.AdaptiveAvgPool2dRequest):
+    try:
+        return _resp(operations.adaptive_avgpool2d_layer(req.tensor, req.output_size, req.dtype), "adaptive_avgpool2d")
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@app.post("/embedding", response_model=models.TensorResponse)
+def embedding(req: models.EmbeddingRequest):
+    try:
+        return _resp(operations.embedding_layer(req.tensor, req.embed_dim, req.vocab_size, req.dtype), "embedding")
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@app.post("/sdpa", response_model=models.TensorResponse)
+def sdpa(req: models.SDPARequest):
+    try:
+        return _resp(operations.scaled_dot_product_attention_layer(req.query, req.key, req.value, req.dtype), "sdpa")
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 

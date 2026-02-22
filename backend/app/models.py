@@ -133,16 +133,89 @@ class ChunkRequest(BaseModel):
 
 
 class CatRequest(BaseModel):
-    """Concatenate along an existing dim. `tensors[0]` is the primary tensor."""
     tensors: List[List]
     dim: int = 0
     dtype: Optional[str] = "float32"
 
 
 class StackRequest(BaseModel):
-    """Stack along a NEW dim. All tensors must have the same shape. `tensors[0]` is the primary tensor."""
     tensors: List[List]
     dim: int = 0
+    dtype: Optional[str] = "float32"
+
+
+# ── Layer op requests ───────────────────────────────────────────────────────────
+
+class LinearRequest(BaseModel):
+    tensor: List
+    out_features: int
+    dtype: Optional[str] = "float32"
+
+
+class Conv1dRequest(BaseModel):
+    tensor: List
+    out_channels: int
+    kernel_size: int = 3
+    stride: int = 1
+    padding: int = 0
+    dtype: Optional[str] = "float32"
+
+
+class Conv2dRequest(BaseModel):
+    tensor: List
+    out_channels: int
+    kernel_size: int = 3
+    stride: int = 1
+    padding: int = 0
+    dtype: Optional[str] = "float32"
+
+
+class MaxPool1dRequest(BaseModel):
+    tensor: List
+    kernel_size: int = 2
+    stride: Optional[int] = None
+    dtype: Optional[str] = "float32"
+
+
+class MaxPool2dRequest(BaseModel):
+    tensor: List
+    kernel_size: int = 2
+    stride: Optional[int] = None
+    dtype: Optional[str] = "float32"
+
+
+class AvgPool1dRequest(BaseModel):
+    tensor: List
+    kernel_size: int = 2
+    stride: Optional[int] = None
+    dtype: Optional[str] = "float32"
+
+
+class AvgPool2dRequest(BaseModel):
+    tensor: List
+    kernel_size: int = 2
+    stride: Optional[int] = None
+    dtype: Optional[str] = "float32"
+
+
+class AdaptiveAvgPool2dRequest(BaseModel):
+    tensor: List
+    output_size: List[int] = Field(..., description="[H_out, W_out]")
+    dtype: Optional[str] = "float32"
+
+
+class EmbeddingRequest(BaseModel):
+    tensor: List          # integer indices [N, seq_len]
+    embed_dim: int
+    vocab_size: Optional[int] = None
+    dtype: Optional[str] = "float32"
+
+
+class SDPARequest(BaseModel):
+    """Scaled Dot-Product Attention. query/key/value must be [N, H, T/S, D]."""
+    query: List
+    key:   List
+    value: List
     dtype: Optional[str] = "float32"
 
 
@@ -156,7 +229,6 @@ class TensorResponse(BaseModel):
 
 
 class TensorsResponse(BaseModel):
-    """Used by ops that return multiple tensors (e.g. chunk)."""
     tensors: List[TensorResponse]
     operation: str
 
@@ -176,7 +248,7 @@ class TensorStats(BaseModel):
 
 class GraphNode(BaseModel):
     id:       str
-    type:     str          # 'tensor' | 'op' | 'tensor_b'
+    type:     str
     label:    str
     shape:    Optional[List[int]] = None
     stats:    Optional[TensorStats] = None
