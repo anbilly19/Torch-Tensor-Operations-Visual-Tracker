@@ -9,7 +9,6 @@ const apiClient = axios.create({
 
 // ── Endpoint map ─────────────────────────────────────────────────────────────────
 const ENDPOINTS = {
-  // Elementwise / scalar
   add:                 '/add',
   sub:                 '/sub',
   mul:                 '/mul',
@@ -18,9 +17,7 @@ const ENDPOINTS = {
   abs:                 '/abs',
   neg:                 '/neg',
   clamp:               '/clamp',
-  // Reduction
   sum:                 '/sum',
-  // Shape & indexing
   reshape:             '/reshape',
   transpose:           '/transpose',
   flatten:             '/flatten',
@@ -33,7 +30,6 @@ const ENDPOINTS = {
   chunk:               '/chunk',
   cat:                 '/cat',
   stack:               '/stack',
-  // Layer ops
   linear:              '/linear',
   conv1d:              '/conv1d',
   conv2d:              '/conv2d',
@@ -59,10 +55,8 @@ function buildBody(opName, tensor, params) {
   if (BINARY_OPS.has(opName)) return { tensor_a: tensor, tensor_b: params.tensor_b };
   if (UNARY_OPS.has(opName))  return { tensor };
 
-  // Layer ops: params already contains the full body fields
   if (LAYER_OPS.has(opName)) {
     if (opName === 'sdpa') {
-      // SDPA: query IS the current tensor; key & value come from params
       return { query: params.query ?? tensor, key: params.key, value: params.value };
     }
     return { tensor, ...params };
@@ -77,32 +71,19 @@ function buildBody(opName, tensor, params) {
       };
     case 'sum':
       return { tensor, dim: params.dim ?? null, keepdim: params.keepdim ?? false };
-    case 'reshape':
-      return { tensor, shape: params.shape };
-    case 'transpose':
-      return { tensor, dim0: params.dim0 ?? 0, dim1: params.dim1 ?? 1 };
-    case 'flatten':
-      return { tensor, start_dim: params.start_dim ?? 0, end_dim: params.end_dim ?? -1 };
-    case 'squeeze':
-      return { tensor, ...(params.dim !== undefined && params.dim !== '' && { dim: params.dim }) };
-    case 'unsqueeze':
-      return { tensor, dim: params.dim ?? 0 };
-    case 'permute':
-      return { tensor, dims: params.dims };
-    case 'tile':
-      return { tensor, dims: params.dims };
-    case 'repeat':
-      return { tensor, sizes: params.sizes };
-    case 'narrow':
-      return { tensor, dim: params.dim ?? 0, start: params.start ?? 0, length: params.length ?? 1 };
-    case 'chunk':
-      return { tensor, chunks: params.chunks ?? 2, dim: params.dim ?? 0 };
-    case 'cat':
-      return { tensors: params.tensors, dim: params.dim ?? 0 };
-    case 'stack':
-      return { tensors: params.tensors, dim: params.dim ?? 0 };
-    default:
-      throw new Error(`Unsupported operation: ${opName}`);
+    case 'reshape':   return { tensor, shape: params.shape };
+    case 'transpose': return { tensor, dim0: params.dim0 ?? 0, dim1: params.dim1 ?? 1 };
+    case 'flatten':   return { tensor, start_dim: params.start_dim ?? 0, end_dim: params.end_dim ?? -1 };
+    case 'squeeze':   return { tensor, ...(params.dim !== undefined && params.dim !== '' && { dim: params.dim }) };
+    case 'unsqueeze': return { tensor, dim: params.dim ?? 0 };
+    case 'permute':   return { tensor, dims: params.dims };
+    case 'tile':      return { tensor, dims: params.dims };
+    case 'repeat':    return { tensor, sizes: params.sizes };
+    case 'narrow':    return { tensor, dim: params.dim ?? 0, start: params.start ?? 0, length: params.length ?? 1 };
+    case 'chunk':     return { tensor, chunks: params.chunks ?? 2, dim: params.dim ?? 0 };
+    case 'cat':       return { tensors: params.tensors, dim: params.dim ?? 0 };
+    case 'stack':     return { tensors: params.tensors, dim: params.dim ?? 0 };
+    default: throw new Error(`Unsupported operation: ${opName}`);
   }
 }
 
@@ -126,6 +107,23 @@ export default {
     return apiClient.post('/cumulative-graph', {
       original_tensor: originalTensor,
       operations,
+    });
+  },
+
+  // ── Import ───────────────────────────────────────────────────────────
+  importTensor(file) {
+    const form = new FormData();
+    form.append('file', file);
+    return apiClient.post('/import-tensor', form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
+
+  importTensorWithKey(file, key) {
+    const form = new FormData();
+    form.append('file', file);
+    return apiClient.post(`/import-tensor?key=${encodeURIComponent(key)}`, form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
     });
   },
 };

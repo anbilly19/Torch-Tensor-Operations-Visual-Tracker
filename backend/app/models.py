@@ -205,14 +205,14 @@ class AdaptiveAvgPool2dRequest(BaseModel):
 
 
 class EmbeddingRequest(BaseModel):
-    tensor: List          # integer indices [N, seq_len]
+    tensor: List
     embed_dim: int
     vocab_size: Optional[int] = None
     dtype: Optional[str] = "float32"
 
 
 class SDPARequest(BaseModel):
-    """Scaled Dot-Product Attention. query/key/value must be [N, H, T/S, D]."""
+    """Scaled Dot-Product Attention."""
     query: List
     key:   List
     value: List
@@ -231,6 +231,23 @@ class TensorResponse(BaseModel):
 class TensorsResponse(BaseModel):
     tensors: List[TensorResponse]
     operation: str
+
+
+# ── Import response ──────────────────────────────────────────────────────────
+
+class ImportResponse(BaseModel):
+    """Returned by POST /import-tensor.
+
+    Two modes:
+    1. data is populated  -> tensor loaded, ready to use
+    2. data is None       -> file is a dict; frontend must re-upload with ?key=
+    """
+    data:         Optional[List]     = None
+    shape:        Optional[List[int]] = None
+    dtype:        Optional[str]      = None
+    operation:    str                = "import"
+    keys:         List[str]          = []
+    key_used:     Optional[str]      = None
 
 
 # ── Interactive graph response ─────────────────────────────────────────────────

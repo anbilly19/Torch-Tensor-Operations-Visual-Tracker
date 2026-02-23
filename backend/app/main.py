@@ -1,7 +1,8 @@
 import os
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, UploadFile, File, Query
 from fastapi.middleware.cors import CORSMiddleware
 from . import models, operations, graph
+from .importer import load_tensor_file
 
 app = FastAPI(title="PyTorch Tensor Operations API")
 
@@ -48,6 +49,45 @@ def create_tensor(req: models.CreateRequest):
         return _resp(t, f"create_{req.op}")
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+
+# ── Tensor import ───────────────────────────────────────────────────────────
+
+@app.post("/import-tensor", response_model=models.ImportResponse)
+async def import_tensor(
+    file: UploadFile = File(...),
+    key:  str | None = Query(default=None, description="Dict key to extract (for .pt/.pth/.npz dicts)"),
+):
+    """
+    Upload a tensor file and load it into the playground.
+
+    - **.pt / .pth** — `torch.save` files; if the file contains a dict/state-dict,
+      a list of keys is returned and the caller must re-upload with `?key=<key>`.
+    - **.npy** — single NumPy array.
+    - **.npz** — NumPy archive; if it contains multiple arrays, key selection applies.
+    - **.csv** — plain numeric CSV (rows × columns).
+    """
+    try:
+        raw = await file.read()
+        result = load_tensor_file(raw, file.filename or "upload", key=key)
+
+        if result["tensor"] is None:
+            # Dict file — return keys for frontend to pick from
+            return models.ImportResponse(keys=result["keys"])
+
+        t = result["tensor"]
+        return models.ImportResponse(
+            data=t.tolist(),
+            shape=list(t.shape),
+            dtype=str(t.dtype).split(".")[-1],
+            operation="import",
+            keys=result["keys"],
+            key_used=result["key_used"],
+        )
+    except (ValueError, KeyError) as e:
+        raise HTTPException(status_code=422, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Import failed: {e}")
 
 
 # ── Binary ops ────────────────────────────────────────────────────────────────
@@ -217,7 +257,7 @@ def stack(req: models.StackRequest):
         raise HTTPException(status_code=400, detail=str(e))
 
 
-# ── Layer ops (shape-altering) ───────────────────────────────────────────────────
+# ── Layer ops ────────────────────────────────────────────────────────────────
 
 @app.post("/linear", response_model=models.TensorResponse)
 def linear(req: models.LinearRequest):
@@ -229,20 +269,14 @@ def linear(req: models.LinearRequest):
 @app.post("/conv1d", response_model=models.TensorResponse)
 def conv1d(req: models.Conv1dRequest):
     try:
-        return _resp(
-            operations.conv1d_layer(req.tensor, req.out_channels, req.kernel_size, req.stride, req.padding, req.dtype),
-            "conv1d",
-        )
+        return _resp(operations.conv1d_layer(req.tensor, req.out_channels, req.kernel_size, req.stride, req.padding, req.dtype), "conv1d")
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
 @app.post("/conv2d", response_model=models.TensorResponse)
 def conv2d(req: models.Conv2dRequest):
     try:
-        return _resp(
-            operations.conv2d_layer(req.tensor, req.out_channels, req.kernel_size, req.stride, req.padding, req.dtype),
-            "conv2d",
-        )
+        return _resp(operations.conv2d_layer(req.tensor, req.out_channels, req.kernel_size, req.stride, req.padding, req.dtype), "conv2d")
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
