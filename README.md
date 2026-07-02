@@ -1,4 +1,10 @@
-# Torch Tensor Operations Visual Tracker
+# 🔦 Torch Tensor Operations Visual Tracker
+
+[![Python](https://img.shields.io/badge/Python-3.10%2B-blue?logo=python)](https://www.python.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-latest-009688?logo=fastapi)](https://fastapi.tiangolo.com/)
+[![React](https://img.shields.io/badge/React-18-61DAFB?logo=react)](https://react.dev/)
+[![PyTorch](https://img.shields.io/badge/PyTorch-latest-EE4C2C?logo=pytorch)](https://pytorch.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 An interactive full-stack web application for exploring PyTorch tensor operations step-by-step — with live shape tracking, computation graph visualization, per-operation stats, and inline PyTorch documentation links.
 
@@ -6,7 +12,7 @@ An interactive full-stack web application for exploring PyTorch tensor operation
 
 ---
 
-## Features
+## ✨ Features
 
 - **31 tensor operations** across five categories: elementwise, reduction, shape & indexing, joining, and layers
 - **Tensor import** — load tensors from `.pt`, `.pth`, `.npy`, `.npz`, or `.csv` files via drag-and-drop; supports state-dict key selection for multi-tensor files
@@ -19,7 +25,59 @@ An interactive full-stack web application for exploring PyTorch tensor operation
 
 ---
 
-## Project Structure
+## 🚀 Quickstart
+
+### Prerequisites
+
+- Python ≥ 3.10
+- Node.js ≥ 18
+
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/anbilly19/Torch-Tensor-Operations-Visual-Tracker.git
+cd Torch-Tensor-Operations-Visual-Tracker
+```
+
+### 2. Start the backend
+
+```bash
+cd backend
+pip install -e .
+uvicorn app.main:app --reload
+# API available at http://localhost:8000
+# Interactive docs at http://localhost:8000/docs
+```
+
+### 3. Start the frontend
+
+```bash
+cd frontend
+npm install
+npm run dev
+# UI available at http://localhost:5173
+```
+
+> **Tip:** Set the `VITE_API_URL` environment variable if your backend runs on a non-default port.
+
+---
+
+## 🛠 Tech Stack
+
+| Layer | Technology |
+|---|---|
+| UI framework | React 18 + Vite |
+| Graph rendering | React Flow (@xyflow/react) |
+| State management | Zustand |
+| Styling | Tailwind CSS + shadcn/ui |
+| HTTP client | Axios |
+| API server | FastAPI |
+| Tensor ops | PyTorch |
+| Data validation | Pydantic v2 |
+
+---
+
+## 🗂 Project Structure
 
 ```
 .
@@ -51,22 +109,20 @@ An interactive full-stack web application for exploring PyTorch tensor operation
 
 ---
 
-## Tech Stack
+## 📖 Usage
 
-| Layer | Technology |
-|---|---|
-| UI framework | React 18 + Vite |
-| Graph rendering | React Flow (@xyflow/react) |
-| State management | Zustand |
-| Styling | Tailwind CSS + shadcn/ui |
-| HTTP client | Axios |
-| API server | FastAPI |
-| Tensor ops | PyTorch |
-| Data validation | Pydantic v2 |
+1. **Create or import a tensor** — use the **Create** tab (ones/zeros + shape presets) or the **Import** tab (drag-and-drop a `.pt`, `.pth`, `.npy`, `.npz`, or `.csv` file)
+2. **Select an operation** — grouped dropdown with five categories; a **PyTorch docs** pill links to the official API page
+3. **Configure parameters** — contextual inputs appear for the chosen op (dim, shape, extra tensors, conv params, etc.)
+4. **Apply** — the result shape, stats, and computation graph all update instantly
+5. **Graph** — hover blue tensor nodes for full stats popover; click green op nodes to open PyTorch docs; pan, zoom, and minimap supported
+6. **Chunk** — after a chunk op, an info box shows all chunk shapes; `currentTensor` follows `chunk[0]`
+7. **SDPA** — current tensor is used as Query; provide Key and Value tensors in the param panel
+8. **Mobile** — tap **Controls** in the header to slide open the operations panel
 
 ---
 
-## Supported Operations
+## ⚙️ Supported Operations
 
 ### Elementwise / Scalar
 
@@ -135,7 +191,7 @@ An interactive full-stack web application for exploring PyTorch tensor operation
 
 ---
 
-## Tensor Import
+## 📥 Tensor Import
 
 The **Import** tab in the Tensor Source panel lets you load a real tensor from disk instead of creating one from scratch.
 
@@ -158,70 +214,30 @@ When a `.pt` / `.pth` / `.npz` file contains multiple tensors (e.g. a model stat
 
 ---
 
-## Responsive Layout
-
-The UI adapts across all screen sizes:
+## 📱 Responsive Layout
 
 | Breakpoint | Layout |
 |---|---|
 | Mobile (`< lg`) | Single column; controls panel hidden by default, opens as a left-side drawer via **Controls** button in the header |
-| Desktop (`lg+`) | Original side-by-side layout — `w-72` controls column + vertical separator + `flex-1` output column |
+| Desktop (`lg+`) | Side-by-side layout — `w-72` controls column + vertical separator + `flex-1` output column |
 
-The computation graph canvas also scales: `320px` on mobile, `420px` on tablet, `480px` on desktop. The MiniMap is hidden on mobile to save space.
-
----
-
-## Installation
-
-### Backend
-
-```bash
-cd backend
-pip install -e .
-```
-
-Requires Python ≥ 3.10.
-
-### Frontend
-
-```bash
-cd frontend
-npm install
-```
+The computation graph canvas scales: `320px` on mobile, `420px` on tablet, `480px` on desktop. The MiniMap is hidden on mobile to save space.
 
 ---
 
-## Running
+## 🔧 Configuration
 
-```bash
-# Terminal 1 — backend
-cd backend
-uvicorn app.main:app --reload
-# API available at http://localhost:8000
-# Interactive docs at http://localhost:8000/docs
-
-# Terminal 2 — frontend
-cd frontend
-npm run dev
-# UI available at http://localhost:5173
-```
+| Setting | Default | Location |
+|---|---|---|
+| Backend port | `8000` | `uvicorn` CLI |
+| CORS origins | `*` (dev) / regex Vercel (prod) | `backend/app/main.py` |
+| Default dtype | `float32` | Per-request param |
+| API base URL | `http://localhost:8000` | `VITE_API_URL` env var |
+| Import file size limit | `50 MB` | `backend/app/importer.py` |
 
 ---
 
-## Usage
-
-1. **Create or import a tensor** — use the **Create** tab (ones/zeros + shape presets) or the **Import** tab (drag-and-drop a `.pt`, `.pth`, `.npy`, `.npz`, or `.csv` file)
-2. **Select an operation** — grouped dropdown with five categories; a **PyTorch docs** pill links to the official API page
-3. **Configure parameters** — contextual inputs appear for the chosen op (dim, shape, extra tensors, conv params, etc.)
-4. **Apply** — the result shape, stats, and computation graph all update instantly
-5. **Graph** — hover blue tensor nodes for full stats popover; click green op nodes to open PyTorch docs; pan, zoom, and minimap supported
-6. **Chunk** — after a chunk op, an info box shows all chunk shapes; `currentTensor` follows `chunk[0]`
-7. **SDPA** — current tensor is used as Query; provide Key and Value tensors in the param panel
-8. **Mobile** — tap **Controls** in the header to slide open the operations panel
-
----
-
-## API Response Models
+## 📦 API Response Models
 
 ```json
 // TensorResponse
@@ -246,22 +262,30 @@ npm run dev
 
 ---
 
-## Configuration
-
-| Setting | Default | Location |
-|---|---|---|
-| Backend port | `8000` | `uvicorn` CLI |
-| CORS origins | `*` (dev) / regex Vercel (prod) | `backend/app/main.py` |
-| Default dtype | `float32` | Per-request param |
-| API base URL | `http://localhost:8000` | `VITE_API_URL` env var |
-| Import file size limit | `50 MB` | `backend/app/importer.py` |
-
----
-
-## Production Build
+## 🏗 Production Build
 
 ```bash
 cd frontend
 npm run build    # outputs to frontend/dist/
 npm run preview  # local preview of production build
 ```
+
+---
+
+## 🤝 Contributing
+
+Contributions are welcome! Here's how to get started:
+
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/your-feature-name`
+3. Make your changes and commit: `git commit -m 'feat: add your feature'`
+4. Push to your fork: `git push origin feature/your-feature-name`
+5. Open a Pull Request against `main`
+
+Please follow [Conventional Commits](https://www.conventionalcommits.org/) for commit messages.
+
+---
+
+## 📄 License
+
+This project is licensed under the [MIT License](LICENSE).
